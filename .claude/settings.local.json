@@ -6,7 +6,10 @@
       "Bash(node --version)",
       "Bash(npx --version)",
       "Read(//home/gopher/.claude/**)",
-      "Bash(cat ~/.claude/.claude.json)"
+      "Bash(cat ~/.claude/.claude.json)",
+      "Bash(go test :*)",
+      "Bash(find :*)",
+      "Bash(sqlite3 :*)"
     ],
     "deny": [],
     "ask": []

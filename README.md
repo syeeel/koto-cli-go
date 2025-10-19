@@ -1,252 +1,329 @@
-# Claude Code Go開発テンプレート
+# koto - ToDo管理CLI
 
-Claude CodeのDevContainer環境でGo言語開発を行うためのテンプレートです。
-DevContainerを使用することで、ローカル環境を汚さずに、すぐに開発を始められます。
+**koto**（琴）は、Go言語で開発されたインタラクティブなToDo管理CLIツールです。
+[Bubbletea](https://github.com/charmbracelet/bubbletea)フレームワークを使用した美しいターミナルUIで、快適なタスク管理体験を提供します。
 
-## 特徴
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Go Version](https://img.shields.io/badge/go-1.21+-00ADD8.svg)
 
-- **Go 1.25.3** - 最新の安定版Go
-- **Claude Code完全統合** - AIアシスタントによる開発支援
-- **開発ツール完備**
-  - `gopls` - Go Language Server（コード補完、リファクタリング、型チェック）
-  - `golangci-lint` - 統合リンター（複数のリンターを統合）
-  - `delve (dlv)` - デバッガー
-  - `air` - ホットリロード開発サーバー
-- **VS Code / Cursor最適化** - Go開発に必要な拡張機能とエディタ設定を事前構成
-- **開発環境の完全分離** - DevContainerによる再現可能な開発環境
+## ✨ 特徴
 
-## セットアップ
+- 🎨 **リッチなTUI** - Bubbletea/Lipglossによる美しいターミナルインターフェース
+- ⚡ **軽量・高速** - Pure Go（CGO不要）で高速起動
+- 📊 **優先度管理** - 3段階の優先度設定（🔴高 🟡中 🟢低）
+- 📅 **期限管理** - 期限日の設定と期限切れ警告
+- 💾 **SQLite保存** - ローカルデータベースで確実にデータを保持
+- 📤 **エクスポート/インポート** - JSON形式でバックアップ・移行可能
+- ⌨️ **Vimライクなキーバインド** - j/kでの快適なナビゲーション
+- 🔍 **ステータスフィルター** - 未完了/完了済みで絞り込み表示
 
-### 前提条件
+## 📦 インストール
 
-- Docker Desktop がインストールされていること
-- VS Code または Cursor エディタがインストールされていること
-- VS Code / Cursorに「Dev Containers」拡張機能がインストールされていること
-
-### 1. リポジトリのクローン
+### バイナリのダウンロード（推奨）
 
 ```bash
-git clone <このリポジトリのURL>
-cd <リポジトリ名>
+# Go環境がある場合
+go install github.com/syeeel/koto-cli-go/cmd/koto@latest
+
+# ビルド済みバイナリを使用する場合
+# リリースページからダウンロードして、PATHに配置
 ```
 
-### 2. DevContainerでの起動
-
-VS Code / Cursorでこのプロジェクトを開き、以下のいずれかの方法でDevContainerを起動：
-
-**方法1: 通知から起動**
-- エディタ右下に表示される「Reopen in Container」をクリック
-
-**方法2: コマンドパレットから起動**
-1. `Cmd+Shift+P` (Mac) / `Ctrl+Shift+P` (Windows/Linux) でコマンドパレットを開く
-2. `Dev Containers: Rebuild and Reopen in Container` を選択
-
-初回起動時はDockerイメージのビルドに数分かかります。
-
-### 3. 動作確認
-
-コンテナが起動したら、ターミナルで以下のコマンドを実行して環境を確認：
+### ソースからビルド
 
 ```bash
-# Goのバージョン確認
-go version
+# リポジトリをクローン
+git clone https://github.com/syeeel/koto-cli-go.git
+cd koto-cli-go
 
-# 開発ツールの確認
-gopls version
-golangci-lint --version
-dlv version
-air -v
-```
-
-## 使い方
-
-### 基本的な開発
-
-```bash
-# アプリケーションの実行
-go run main.go
+# 依存関係をダウンロード
+go mod download
 
 # ビルド
-go build -o app
+go build -o bin/koto ./cmd/koto
+
+# 実行
+./bin/koto
+```
+
+## 🚀 使い方
+
+### アプリケーションの起動
+
+```bash
+koto
+```
+
+起動すると、インタラクティブなTUIが表示されます。
+
+### 基本コマンド
+
+#### ToDoの追加
+
+```bash
+/add 買い物に行く
+/add レポート作成 --desc="第5章をまとめる" --priority=high --due=2025-10-25
+```
+
+**オプション**:
+- `--desc="説明文"` - ToDoの詳細説明
+- `--priority=low|medium|high` - 優先度（デフォルト: medium）
+- `--due=YYYY-MM-DD` - 期限日
+
+#### ToDoの表示
+
+```bash
+/list                      # すべてのToDoを表示
+/list --status=pending     # 未完了のみ
+/list --status=completed   # 完了済みのみ
+```
+
+#### ToDoの完了
+
+```bash
+/done 1    # ID 1のToDoを完了にする
+```
+
+#### ToDoの編集
+
+```bash
+/edit 1 --title="新しいタイトル"
+/edit 1 --priority=high
+/edit 1 --desc="新しい説明"
+/edit 1 --due=2025-12-31
+```
+
+#### ToDoの削除
+
+```bash
+/delete 1    # ID 1のToDoを削除
+```
+
+#### エクスポート/インポート
+
+```bash
+/export ~/my-todos.json     # JSONファイルにエクスポート
+/import ~/todos-backup.json # JSONファイルからインポート
+```
+
+#### ヘルプ
+
+```bash
+/help    # ヘルプ画面を表示
+```
+
+### ⌨️ キーボードショートカット
+
+| キー | 動作 |
+|------|------|
+| `↑` / `k` | カーソルを上に移動 |
+| `↓` / `j` | カーソルを下に移動 |
+| `Enter` | コマンドを実行 |
+| `Esc` | 入力欄をクリア |
+| `?` | ヘルプ画面を表示/非表示 |
+| `Ctrl+C` | アプリケーション終了 |
+
+### 📺 画面の見方
+
+```
+📝 koto - ToDo Manager
+
+  ⬜ 🔴 [1] 重要な会議の準備
+> ✅ 🟡 [2] 買い物リスト ⚠ OVERDUE
+  ⬜ 🟢 [3] メールの返信
+
+> /add 新しいタスク
+
+Commands: /add, /list, /done, /delete, /edit, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: Ctrl+C
+```
+
+**表示の説明**:
+- `>` - 現在選択中のToDo（カーソル位置）
+- `⬜` - 未完了
+- `✅` - 完了済み
+- `🔴🟡🟢` - 優先度（高・中・低）
+- `[数字]` - ToDo ID
+- `⚠ OVERDUE` - 期限切れの警告
+
+## 📁 データの保存場所
+
+すべてのToDoは以下のSQLiteデータベースに保存されます：
+
+```
+~/.koto/koto.db
+```
+
+バックアップを取る場合は、このファイルをコピーするか、`/export` コマンドを使用してください。
+
+## 🏗️ アーキテクチャ
+
+kotoは、クリーンアーキテクチャに基づいたレイヤー構造を採用しています：
+
+```
+┌─────────────────┐
+│   TUI Layer     │  Bubbletea UI（コマンド入力、表示）
+├─────────────────┤
+│ Service Layer   │  ビジネスロジック、バリデーション
+├─────────────────┤
+│Repository Layer │  データアクセス（SQLite）
+├─────────────────┤
+│  Model Layer    │  データ構造定義
+└─────────────────┘
+```
+
+### ディレクトリ構成
+
+```
+koto-cli-go/
+├── cmd/
+│   └── koto/              # メインエントリーポイント
+│       └── main.go
+├── internal/
+│   ├── model/             # データモデル（Todo, Status, Priority）
+│   │   ├── todo.go
+│   │   └── todo_test.go
+│   ├── repository/        # データアクセス層
+│   │   ├── repository.go
+│   │   ├── sqlite.go
+│   │   └── sqlite_test.go
+│   ├── service/           # ビジネスロジック層
+│   │   ├── todo_service.go
+│   │   └── todo_service_test.go
+│   ├── tui/               # ターミナルUI
+│   │   ├── model.go
+│   │   ├── update.go
+│   │   ├── views.go
+│   │   ├── styles.go
+│   │   └── commands.go
+│   └── config/            # 設定管理
+│       └── config.go
+├── migrations/            # データベーススキーマ
+│   └── 001_init.sql
+├── docs/                  # ドキュメント
+│   ├── design/            # 設計書
+│   └── implementation/    # 実装管理
+├── go.mod
+├── go.sum
+└── README.md
+```
+
+## 🛠️ 開発環境
+
+### 必要な環境
+
+- Go 1.21以上
+- SQLite 3（Pure Go実装を使用するため不要）
+
+### 依存関係
+
+- [github.com/charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea) - TUIフレームワーク
+- [github.com/charmbracelet/bubbles](https://github.com/charmbracelet/bubbles) - TUIコンポーネント
+- [github.com/charmbracelet/lipgloss](https://github.com/charmbracelet/lipgloss) - スタイリング
+- [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) - Pure Go SQLite
+
+### 開発コマンド
+
+```bash
+# 依存関係のダウンロード
+go mod download
 
 # テストの実行
 go test ./...
+go test -v ./internal/model/...     # Model層のみ
+go test -v ./internal/repository/... # Repository層のみ
+go test -v ./internal/service/...    # Service層のみ
 
-# リンターの実行
-golangci-lint run
+# リント
+go vet ./...
+golangci-lint run  # golangci-lintがインストール済みの場合
+
+# ビルド
+go build -o bin/koto ./cmd/koto
+
+# クロスコンパイル
+GOOS=darwin GOARCH=amd64 go build -o bin/koto-darwin-amd64 ./cmd/koto
+GOOS=linux GOARCH=amd64 go build -o bin/koto-linux-amd64 ./cmd/koto
+GOOS=windows GOARCH=amd64 go build -o bin/koto-windows-amd64.exe ./cmd/koto
 ```
 
-### ホットリロード（Air使用）
+### DevContainer環境
+
+このプロジェクトはVS Code / Cursor用のDevContainer環境を含んでいます。
 
 ```bash
-# Airでホットリロードを有効にして開発
-air
-
-# .air.toml で設定をカスタマイズ可能
+# VS Code / Cursorで開く
+# "Reopen in Container" を選択するだけで開発環境が整います
 ```
 
-ファイルを保存すると自動的に再ビルド・再起動されます。
+## 🧪 テスト
 
-### デバッグ
-
-VS Code / Cursorのデバッグ機能を使用するか、コマンドラインから：
+このプロジェクトは、各層で包括的なテストを実装しています。
 
 ```bash
-# デバッガーを起動
-dlv debug
+# すべてのテストを実行
+go test ./...
+
+# カバレッジレポート
+go test -cover ./...
+
+# 詳細なカバレッジレポート
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
 ```
 
-## プロジェクト構成
+**テスト統計**:
+- Model層: 3テスト関数、7サブテスト
+- Repository層: 9テスト関数（インメモリDB使用）
+- Service層: 13テスト関数（モックRepository使用）
 
-```
-.
-├── .devcontainer/          # DevContainer設定ファイル
-│   ├── Dockerfile          # Go開発環境のDockerイメージ定義
-│   └── devcontainer.json   # DevContainerの設定
-├── .claude/                # Claude Code設定
-├── .vscode/                # VS Code設定
-├── .air.toml              # Airホットリロード設定
-├── main.go                # サンプルHTTPサーバー
-├── go.mod                 # Go module定義
-├── README.md              # このファイル
-└── .gitignore             # Gitignore設定
-```
+## 📝 ライセンス
 
-## サンプルアプリケーション
+このプロジェクトは[MITライセンス](LICENSE.md)の下で公開されています。
 
-このテンプレートには簡単なHTTPサーバーが含まれています：
+## 🤝 コントリビューション
 
-```bash
-# サーバーを起動
-go run main.go
+プルリクエストを歓迎します！バグ報告や機能要望は、[Issues](https://github.com/syeeel/koto-cli-go/issues)にお願いします。
 
-# 別のターミナルで確認
-curl http://localhost:8080
-curl http://localhost:8080/health
-```
+### 開発ガイドライン
 
-## 開発環境の詳細
+1. このリポジトリをフォーク
+2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
+3. テストを追加・実行 (`go test ./...`)
+4. コミット (`git commit -m 'feat: Add amazing feature'`)
+5. プッシュ (`git push origin feature/amazing-feature`)
+6. プルリクエストを作成
 
-### インストール済みツール
+詳細は[.claude/CLAUDE.md](.claude/CLAUDE.md)の開発ガイドを参照してください。
 
-- **Go 1.23.2** - 最新の安定版Go
-- **Node.js 20** - Claude Code実行環境
-- **Git & GitHub CLI** - バージョン管理
-- **Zsh** - デフォルトシェル（高機能なコマンドライン）
-- **Git Delta** - 美しい差分表示
+## 🔗 参考リンク
 
-### Go開発ツール
+- [Bubbletea](https://github.com/charmbracelet/bubbletea) - TUIフレームワーク
+- [Bubbles](https://github.com/charmbracelet/bubbles) - TUIコンポーネント集
+- [Lipgloss](https://github.com/charmbracelet/lipgloss) - ターミナルスタイリング
+- [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) - Pure Go SQLite
 
-- **gopls** - Go Language Server Protocol実装（IntelliSense、リファクタリング、型チェック）
-- **golangci-lint** - 統合リンター（go vet、staticcheck等、複数のリンターを統合）
-- **delve (dlv)** - Goデバッガー（ブレークポイント、ステップ実行）
-- **air** - ライブリロードツール（ファイル変更を検知して自動再起動）
+## 💡 FAQ
 
-### VS Code / Cursor拡張機能
+### Q: データはどこに保存されますか？
 
-自動的にインストールされる拡張機能：
+A: `~/.koto/koto.db` にSQLiteデータベースとして保存されます。
 
-- **Claude Code** - AIアシスタント
-- **Go** - Go言語サポート
-- **GitLens** - Git強化ツール
+### Q: 複数のマシンでToDoを同期できますか？
 
-### エディタ設定
+A: 現在、同期機能はありません。`/export` コマンドでJSONファイルにエクスポートし、他のマシンで `/import` することで移行は可能です。
 
-`.devcontainer/devcontainer.json`で以下が自動設定されます：
+### Q: ToDoの検索機能はありますか？
 
-- 保存時の自動フォーマット（`gofmt`）
-- 保存時のインポート自動整理
-- golangci-lintによる自動リント
-- Zshをデフォルトターミナルに設定
+A: 現在のバージョンでは検索機能は実装されていません。将来のバージョンで追加予定です。
 
-## カスタマイズ
+### Q: Windowsで動作しますか？
 
-### Goバージョンの変更
+A: はい、Pure Go実装のため、Windows、macOS、Linuxすべてで動作します。
 
-`.devcontainer/Dockerfile` の `FROM golang:1.23.2-bookworm` を変更してください。
+## 📮 お問い合わせ
 
-### 追加のGo依存関係
+バグ報告や質問は、[GitHub Issues](https://github.com/syeeel/koto-cli-go/issues)までお願いします。
 
-```bash
-go get <package-name>
-```
+---
 
-### 追加の開発ツール
-
-`.devcontainer/Dockerfile` の該当セクションに追加してください。
-
-## トラブルシューティング
-
-### コンテナが起動しない
-
-```bash
-# コンテナを完全に再ビルド
-Dev Containers: Rebuild Container Without Cache
-```
-
-### Go言語サーバーが動作しない
-
-```bash
-# goplsの再インストール
-go install golang.org/x/tools/gopls@latest
-```
-
-## Claude Code について
-
-このテンプレートは**Claude Code**との統合を前提に設計されています。
-
-### Claude Codeとは？
-
-Claude CodeはAnthropicが開発したAIアシスタントで、VS Code / Cursor内で直接動作し、コードの作成、リファクタリング、バグ修正、説明などを支援します。
-
-### このテンプレートでできること
-
-- **コード生成**: 自然言語でリクエストして、Goコードを生成
-- **バグ修正**: エラーメッセージを共有して、修正案を取得
-- **コードレビュー**: 既存コードの改善提案を受ける
-- **テスト作成**: 関数のユニットテストを自動生成
-- **リファクタリング**: コードの改善提案と実装
-
-### 使い方
-
-1. DevContainerでプロジェクトを開く
-2. Claude Codeを起動（エディタ内のClaude Code拡張機能から）
-3. 自然言語でリクエストを入力
-4. Claude Codeがコードを生成・編集
-
-詳しくは[Claude Code公式ドキュメント](https://docs.anthropic.com/en/docs/claude-code/overview)をご覧ください。
-
-## よくある質問
-
-### Q: ローカル環境にGoをインストールする必要はありますか？
-
-A: いいえ、必要ありません。全ての開発環境はDevContainer内に含まれているため、Dockerさえあれば開発を始められます。
-
-### Q: このテンプレートは商用プロジェクトで使用できますか？
-
-A: はい、自由に使用できます。詳細はLICENSE.mdをご確認ください。
-
-### Q: Go以外の言語でも同様のテンプレートはありますか？
-
-A: Claude Codeは様々な言語に対応しています。詳しくは公式ドキュメントをご覧ください。
-
-### Q: DevContainerを使わずに使用できますか？
-
-A: このテンプレートはDevContainer前提で設計されていますが、Dockerfileを参考にローカル環境を構築することも可能です。
-
-## 参考リンク
-
-- [Go公式ドキュメント](https://go.dev/doc/) - Go言語の公式ドキュメント
-- [Claude Code公式サイト](https://claude.ai/code) - Claude Codeの詳細
-- [Claude Code ドキュメント](https://docs.anthropic.com/en/docs/claude-code/overview) - 使い方ガイド
-- [golangci-lint](https://golangci-lint.run/) - Goリンターツール
-- [Air](https://github.com/air-verse/air) - ホットリロードツール
-- [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) - VS Code Dev Containers
-
-## ライセンス
-
-このプロジェクトのライセンスについては、[LICENSE.md](LICENSE.md)をご確認ください。
-
-## セキュリティ
-
-セキュリティに関する問題を発見した場合は、[SECURITY.md](SECURITY.md)をご確認ください。
+**koto**を使って、快適なタスク管理を！ 🎵

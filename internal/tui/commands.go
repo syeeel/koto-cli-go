@@ -1,0 +1,333 @@
+package tui
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/syeeel/koto-cli-go/internal/model"
+	"github.com/syeeel/koto-cli-go/internal/service"
+)
+
+// Message types for Bubbletea
+
+// commandExecutedMsg is sent when a command has been executed
+type commandExecutedMsg struct {
+	message string
+	err     error
+}
+
+// todosLoadedMsg is sent when todos have been loaded
+type todosLoadedMsg struct {
+	todos []*model.Todo
+	err   error
+}
+
+// parseAndExecuteCommand parses and executes a command
+func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
+	return func() tea.Msg {
+		input = strings.TrimSpace(input)
+
+		// Check if input starts with /
+		if !strings.HasPrefix(input, "/") {
+			return commandExecutedMsg{
+				err: errors.New("commands must start with /"),
+			}
+		}
+
+		// Parse command and arguments
+		parts := strings.Fields(input)
+		if len(parts) == 0 {
+			return commandExecutedMsg{
+				err: errors.New("no command provided"),
+			}
+		}
+
+		command := parts[0]
+		args := parts[1:]
+
+		ctx := context.Background()
+
+		// Execute command
+		switch command {
+		case "/add":
+			return handleAddCommand(ctx, svc, args)
+		case "/edit":
+			return handleEditCommand(ctx, svc, args)
+		case "/delete":
+			return handleDeleteCommand(ctx, svc, args)
+		case "/done":
+			return handleDoneCommand(ctx, svc, args)
+		case "/list":
+			return handleListCommand(ctx, svc, args)
+		case "/export":
+			return handleExportCommand(ctx, svc, args)
+		case "/import":
+			return handleImportCommand(ctx, svc, args)
+		case "/help":
+			return commandExecutedMsg{message: "Press '?' to view help"}
+		case "/quit":
+			return tea.Quit()
+		default:
+			return commandExecutedMsg{
+				err: fmt.Errorf("unknown command: %s", command),
+			}
+		}
+	}
+}
+
+// loadTodos loads all todos from the service
+func loadTodos(svc *service.TodoService) tea.Cmd {
+	return func() tea.Msg {
+		todos, err := svc.ListTodos(context.Background())
+		return todosLoadedMsg{todos: todos, err: err}
+	}
+}
+
+// handleAddCommand handles the /add command
+func handleAddCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+	if len(args) == 0 {
+		return commandExecutedMsg{err: errors.New("usage: /add <title> [--desc=<description>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]")}
+	}
+
+	// Parse arguments
+	var title string
+	var description string
+	priority := model.PriorityMedium
+	var dueDate *time.Time
+
+	for i, arg := range args {
+		if strings.HasPrefix(arg, "--desc=") {
+			description = strings.TrimPrefix(arg, "--desc=")
+			description = strings.Trim(description, "\"'")
+		} else if strings.HasPrefix(arg, "--priority=") {
+			priorityStr := strings.TrimPrefix(arg, "--priority=")
+			switch strings.ToLower(priorityStr) {
+			case "low":
+				priority = model.PriorityLow
+			case "medium":
+				priority = model.PriorityMedium
+			case "high":
+				priority = model.PriorityHigh
+			default:
+				return commandExecutedMsg{err: errors.New("invalid priority (use: low, medium, high)")}
+			}
+		} else if strings.HasPrefix(arg, "--due=") {
+			dueDateStr := strings.TrimPrefix(arg, "--due=")
+			parsedDate, err := time.Parse("2006-01-02", dueDateStr)
+			if err != nil {
+				return commandExecutedMsg{err: fmt.Errorf("invalid due date format (use YYYY-MM-DD): %w", err)}
+			}
+			dueDate = &parsedDate
+		} else {
+			// This is part of the title
+			if title == "" {
+				title = arg
+			} else if i == 1 && !strings.HasPrefix(args[i-1], "--") {
+				// Allow multi-word titles
+				title = title + " " + arg
+			}
+		}
+	}
+
+	if title == "" {
+		return commandExecutedMsg{err: errors.New("title is required")}
+	}
+
+	// Add the todo
+	todo, err := svc.AddTodo(ctx, title, description, priority, dueDate)
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	return commandExecutedMsg{message: fmt.Sprintf("Added todo #%d: %s", todo.ID, todo.Title)}
+}
+
+// handleEditCommand handles the /edit command
+func handleEditCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+	if len(args) < 2 {
+		return commandExecutedMsg{err: errors.New("usage: /edit <id> [--title=<title>] [--desc=<description>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]")}
+	}
+
+	// Parse ID
+	id, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		return commandExecutedMsg{err: errors.New("invalid todo ID")}
+	}
+
+	// Get current todo
+	todos, err := svc.ListTodos(ctx)
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	var currentTodo *model.Todo
+	for _, t := range todos {
+		if t.ID == id {
+			currentTodo = t
+			break
+		}
+	}
+
+	if currentTodo == nil {
+		return commandExecutedMsg{err: fmt.Errorf("todo #%d not found", id)}
+	}
+
+	// Use current values as defaults
+	title := currentTodo.Title
+	description := currentTodo.Description
+	priority := currentTodo.Priority
+	dueDate := currentTodo.DueDate
+
+	// Parse update arguments
+	for _, arg := range args[1:] {
+		if strings.HasPrefix(arg, "--title=") {
+			title = strings.TrimPrefix(arg, "--title=")
+			title = strings.Trim(title, "\"'")
+		} else if strings.HasPrefix(arg, "--desc=") {
+			description = strings.TrimPrefix(arg, "--desc=")
+			description = strings.Trim(description, "\"'")
+		} else if strings.HasPrefix(arg, "--priority=") {
+			priorityStr := strings.TrimPrefix(arg, "--priority=")
+			switch strings.ToLower(priorityStr) {
+			case "low":
+				priority = model.PriorityLow
+			case "medium":
+				priority = model.PriorityMedium
+			case "high":
+				priority = model.PriorityHigh
+			default:
+				return commandExecutedMsg{err: errors.New("invalid priority (use: low, medium, high)")}
+			}
+		} else if strings.HasPrefix(arg, "--due=") {
+			dueDateStr := strings.TrimPrefix(arg, "--due=")
+			parsedDate, err := time.Parse("2006-01-02", dueDateStr)
+			if err != nil {
+				return commandExecutedMsg{err: fmt.Errorf("invalid due date format (use YYYY-MM-DD): %w", err)}
+			}
+			dueDate = &parsedDate
+		}
+	}
+
+	// Update the todo
+	err = svc.EditTodo(ctx, id, title, description, priority, dueDate)
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	return commandExecutedMsg{message: fmt.Sprintf("Updated todo #%d", id)}
+}
+
+// handleDeleteCommand handles the /delete command
+func handleDeleteCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+	if len(args) != 1 {
+		return commandExecutedMsg{err: errors.New("usage: /delete <id>")}
+	}
+
+	id, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		return commandExecutedMsg{err: errors.New("invalid todo ID")}
+	}
+
+	err = svc.DeleteTodo(ctx, id)
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	return commandExecutedMsg{message: fmt.Sprintf("Deleted todo #%d", id)}
+}
+
+// handleDoneCommand handles the /done command
+func handleDoneCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+	if len(args) != 1 {
+		return commandExecutedMsg{err: errors.New("usage: /done <id>")}
+	}
+
+	id, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		return commandExecutedMsg{err: errors.New("invalid todo ID")}
+	}
+
+	err = svc.CompleteTodo(ctx, id)
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	return commandExecutedMsg{message: fmt.Sprintf("Marked todo #%d as completed", id)}
+}
+
+// handleListCommand handles the /list command
+func handleListCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+	// Parse status filter
+	var status *model.TodoStatus
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "--status=") {
+			statusStr := strings.TrimPrefix(arg, "--status=")
+			switch strings.ToLower(statusStr) {
+			case "pending":
+				s := model.StatusPending
+				status = &s
+			case "completed":
+				s := model.StatusCompleted
+				status = &s
+			case "all":
+				status = nil
+			default:
+				return commandExecutedMsg{err: errors.New("invalid status (use: pending, completed, all)")}
+			}
+		}
+	}
+
+	// This command just triggers a reload, the actual display is handled by the view
+	var todos []*model.Todo
+	var err error
+
+	if status == nil {
+		todos, err = svc.ListTodos(ctx)
+	} else if *status == model.StatusPending {
+		todos, err = svc.ListPendingTodos(ctx)
+	} else {
+		todos, err = svc.ListCompletedTodos(ctx)
+	}
+
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	return commandExecutedMsg{message: fmt.Sprintf("Showing %d todos", len(todos))}
+}
+
+// handleExportCommand handles the /export command
+func handleExportCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+	filepath := "todos_export.json"
+	if len(args) > 0 {
+		filepath = args[0]
+	}
+
+	err := svc.ExportToJSON(ctx, filepath)
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	return commandExecutedMsg{message: fmt.Sprintf("Exported todos to %s", filepath)}
+}
+
+// handleImportCommand handles the /import command
+func handleImportCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+	if len(args) != 1 {
+		return commandExecutedMsg{err: errors.New("usage: /import <filepath>")}
+	}
+
+	filepath := args[0]
+
+	err := svc.ImportFromJSON(ctx, filepath)
+	if err != nil {
+		return commandExecutedMsg{err: err}
+	}
+
+	return commandExecutedMsg{message: fmt.Sprintf("Imported todos from %s", filepath)}
+}

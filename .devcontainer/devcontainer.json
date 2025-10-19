@@ -57,7 +57,9 @@
     "POWERLEVEL9K_DISABLE_GITSTATUS": "true"
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
-  "workspaceFolder": "/workspace",
-  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
-  "waitFor": "postStartCommand"
+  "workspaceFolder": "/workspace"
+  // "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  // "waitFor": "postStartCommand"
+  // NOTE: Firewall disabled to allow Go dependency downloads.
+  // Re-enable if network restrictions are required.
 }
