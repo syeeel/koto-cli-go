@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "Bash(docker build -t test-go-devcontainer --build-arg TZ=America/Los_Angeles --build-arg CLAUDE_CODE_VERSION=latest --build-arg GIT_DELTA_VERSION=0.18.2 --build-arg ZSH_IN_DOCKER_VERSION=1.2.0 --build-arg NODE_VERSION=20 -f Dockerfile .)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
