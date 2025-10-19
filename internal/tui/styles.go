@@ -55,4 +55,28 @@ var (
 	// lowPriorityStyle is the style for low priority indicator
 	lowPriorityStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("82"))
+
+	// bannerStyle is the style for the startup banner
+	bannerStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#06c775")).
+		Bold(true).
+		Align(lipgloss.Center)
+
+	// bannerSubtitleStyle is the style for the banner subtitle
+	bannerSubtitleStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Italic(true).
+		Align(lipgloss.Center)
+
+	// bannerVersionStyle is the style for the version info
+	bannerVersionStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("241")).
+		Align(lipgloss.Center)
+
+	// bannerPromptStyle is the style for the "press any key" prompt
+	bannerPromptStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("246")).
+		Italic(true).
+		Align(lipgloss.Center).
+		MarginTop(2)
 )

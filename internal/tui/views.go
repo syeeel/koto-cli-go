@@ -14,6 +14,8 @@ func (m Model) View() string {
 	}
 
 	switch m.viewMode {
+	case ViewModeBanner:
+		return m.renderBannerView()
 	case ViewModeHelp:
 		return m.renderHelpView()
 	default:
@@ -185,6 +187,34 @@ func (m Model) renderHelpView() string {
 
 	s.WriteString("\n")
 	s.WriteString(helpStyle.Render("Press 'q', 'Esc', or 'Ctrl+C' to return to the main view"))
+
+	return s.String()
+}
+
+// renderBannerView renders the startup banner screen
+func (m Model) renderBannerView() string {
+	var s strings.Builder
+
+	// Add some vertical padding
+	s.WriteString("\n\n\n")
+
+	// Render the ASCII art banner
+	banner := GetBanner()
+	s.WriteString(bannerStyle.Render(banner))
+	s.WriteString("\n\n")
+
+	// Render subtitle
+	subtitle := GetSubtitle()
+	s.WriteString(bannerSubtitleStyle.Render(subtitle))
+	s.WriteString("\n\n")
+
+	// Render version
+	version := GetVersion()
+	s.WriteString(bannerVersionStyle.Render(version))
+	s.WriteString("\n")
+
+	// Render "press any key" prompt
+	s.WriteString(bannerPromptStyle.Render("Press any key to continue..."))
 
 	return s.String()
 }

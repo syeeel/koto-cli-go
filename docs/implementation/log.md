@@ -627,3 +627,164 @@ All planned Phase 2 features completed:
 **Documentation Status**: Complete and ready for release 🎉
 
 ---
+
+## 2025-10-19 - Phase 2.5: Startup Banner Implementation Complete
+
+### Implementation Details
+
+#### 2.5.1 Banner ASCII Art
+- Created `internal/tui/banner.go`
+  - Defined KOTO CLI ASCII art using Unicode box-drawing characters
+  - Implemented `GetBanner()` function to return the banner string
+  - Implemented `GetSubtitle()` function: "✨ Your Beautiful Terminal ToDo Manager ✨"
+  - Implemented `GetVersion()` function: "v1.0.0"
+
+#### 2.5.2 Banner View Implementation
+- Updated `internal/tui/model.go`
+  - Added `ViewModeBanner` constant (as iota 0)
+  - Changed initial viewMode from `ViewModeList` to `ViewModeBanner`
+  - Reordered ViewMode constants: Banner → List → Help
+
+- Updated `internal/tui/styles.go`
+  - Added `bannerStyle`: Orange (208), bold, center-aligned
+  - Added `bannerSubtitleStyle`: Pink (213), italic, center-aligned
+  - Added `bannerVersionStyle`: Gray (241), center-aligned
+  - Added `bannerPromptStyle`: Gray (246), italic, center-aligned, margin-top 2
+
+- Updated `internal/tui/views.go`
+  - Added `ViewModeBanner` case to `View()` function
+  - Implemented `renderBannerView()` function:
+    - Vertical padding (3 newlines)
+    - Styled ASCII art banner
+    - Styled subtitle
+    - Styled version info
+    - "Press any key to continue..." prompt
+
+- Updated `internal/tui/update.go`
+  - Added banner view key handling before help view handling
+  - Any key press in banner view transitions to list view
+  - Simple and intuitive user experience
+
+### Technical Decisions
+
+#### 1. Unicode Box-Drawing Characters
+**Decision**: Used Unicode box-drawing characters (╔═╗║╚╝) for ASCII art
+
+**Reasoning**:
+- More visually appealing than basic ASCII characters
+- Supported by modern terminals
+- Creates professional, polished appearance
+- Maintains terminal-native aesthetic
+
+#### 2. Immediate Transition on Any Key
+**Decision**: Transition to list view on any key press (no timeout)
+
+**Reasoning**:
+- User-controlled experience
+- No forced delays
+- Accessible for all users
+- Simple implementation
+
+**Future Enhancement**:
+- Optional 2-3 second auto-transition with tea.Tick could be added later
+
+#### 3. Color Scheme
+**Decision**: Orange (208) for banner, pink (213) for subtitle
+
+**Reasoning**:
+- Vibrant and welcoming
+- High contrast with terminal background
+- Matches modern CLI tool aesthetics
+- Differentiates from list view (which uses pink for title)
+
+### Files Modified
+
+**New File**:
+- `internal/tui/banner.go` (27 lines)
+
+**Modified Files**:
+- `internal/tui/model.go` (changed ViewMode order and initial state)
+- `internal/tui/styles.go` (+24 lines of banner styles)
+- `internal/tui/views.go` (+26 lines for renderBannerView)
+- `internal/tui/update.go` (+5 lines for banner key handling)
+
+**Total**: 82 lines added/modified
+
+### Build and Test Results
+
+**Build**: ✅ Successful
+- Binary: `bin/koto` (9.8MB)
+- No compilation errors
+- Clean build
+
+**Tests**: ✅ All Passing
+- Model layer: PASS
+- Repository layer: PASS
+- Service layer: PASS
+- No test regressions
+
+**Note**: TUI requires interactive terminal for full testing
+
+### Features Implemented
+
+✅ **Startup Banner Screen**:
+- Large KOTO CLI ASCII art logo
+- Subtitle with sparkle emojis
+- Version display
+- "Press any key to continue" prompt
+- Smooth transition to main list view
+
+### User Experience Flow
+
+1. User runs `./bin/koto`
+2. Banner screen appears with KOTO CLI logo
+3. User sees subtitle and version
+4. User presses any key
+5. Application transitions to main todo list view
+6. Normal TUI operation continues
+
+### Next Steps
+
+**Immediate**:
+- User should test in interactive terminal
+- Verify banner appears correctly
+- Verify smooth transition
+
+**Future Enhancements** (Optional):
+- Add color gradient to banner
+- Add animation effects (fade-in)
+- Add configurable auto-transition timeout
+- Add --no-banner flag for direct start
+
+### Achievements
+
+🎉 **Phase 2.5 Complete**:
+- ✅ Professional startup banner implemented
+- ✅ Brand identity enhanced
+- ✅ User experience improved
+- ✅ All tests passing
+- ✅ Zero regressions
+
+**Progress**: 71/106 tasks completed
+
+---
+
+## 2025-10-19 - Banner Color Update
+
+### Change Details
+
+**Updated**: `internal/tui/styles.go`
+- Changed `bannerStyle` foreground color from orange (208) to custom green (#06c775)
+
+**Reasoning**:
+- User requested brand color alignment
+- Green (#06c775) provides fresh, modern aesthetic
+- Maintains high contrast and readability
+- Aligns with brand identity
+
+**Build**: ✅ Successful
+**Tests**: ✅ All Passing
+
+The KOTO CLI banner now displays in a vibrant green color (#06c775).
+
+---

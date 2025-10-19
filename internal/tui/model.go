@@ -11,8 +11,10 @@ import (
 type ViewMode int
 
 const (
+	// ViewModeBanner shows the startup banner
+	ViewModeBanner ViewMode = iota
 	// ViewModeList shows the list of todos
-	ViewModeList ViewMode = iota
+	ViewModeList
 	// ViewModeHelp shows the help screen
 	ViewModeHelp
 )
@@ -43,7 +45,7 @@ func NewModel(service *service.TodoService) Model {
 		service:  service,
 		todos:    []*model.Todo{},
 		cursor:   0,
-		viewMode: ViewModeList,
+		viewMode: ViewModeBanner,
 		input:    ti,
 		quitting: false,
 	}

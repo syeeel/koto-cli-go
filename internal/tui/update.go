@@ -15,6 +15,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		// Handle banner view - any key transitions to list view
+		if m.viewMode == ViewModeBanner {
+			m.viewMode = ViewModeList
+			return m, nil
+		}
+
 		// Handle view mode specific keys
 		if m.viewMode == ViewModeHelp {
 			switch msg.String() {
