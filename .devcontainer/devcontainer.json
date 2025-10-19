@@ -1,5 +1,5 @@
 {
-  "name": "Claude Code template for Go projects",
+  "name": "koto-cli-go",
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
