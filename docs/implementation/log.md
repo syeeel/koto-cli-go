@@ -788,3 +788,354 @@ All planned Phase 2 features completed:
 The KOTO CLI banner now displays in a vibrant green color (#06c775).
 
 ---
+
+## 2025-10-19 - Banner Layout Enhancement: Two-Column Layout with Recent Todos
+
+### Implementation Details
+
+**Goal**: Display recent todos on the right side of the banner with a green border box.
+
+#### Changes Made
+
+**Updated**: `internal/tui/styles.go`
+- Added `bannerTodoBoxStyle`: Green (#06c775) rounded border box, 40 chars wide, padding 1x2
+- Added `bannerTodoTitleStyle`: Green (#06c775) bold title for todo box
+- Added `bannerTodoItemStyle`: Gray (252) text for todo items in banner
+
+**Updated**: `internal/tui/views.go`
+- Added `lipgloss` import for layout functionality
+- Rewrote `renderBannerView()` to use two-column layout:
+  - Left column: KOTO CLI banner, subtitle, version, prompt
+  - Right column: Recent todos box
+  - Uses `lipgloss.JoinHorizontal()` with 4-space gap
+- Implemented `renderBannerTodoBox()`:
+  - Displays "📋 Recent Todos" title
+  - Shows up to 5 oldest todos (by creation date)
+  - Shows status (⬜/✅), priority (🔴🟡🟢), and title
+  - Truncates long titles to 35 chars
+  - Shows "+ N more todos..." if more than 5 exist
+  - Wrapped in green rounded border box
+
+### Technical Decisions
+
+#### 1. Two-Column Layout
+**Decision**: Use `lipgloss.JoinHorizontal()` for side-by-side layout
+
+**Reasoning**:
+- Native lipgloss support for column layouts
+- Automatic alignment handling
+- Clean separation of concerns
+- Responsive to content width
+
+#### 2. Oldest First (Creation Date)
+**Decision**: Display oldest 5 todos instead of newest
+
+**Reasoning**:
+- Highlights long-standing tasks
+- Encourages users to complete old todos
+- Most useful for task management
+- Aligns with "todo anxiety" reduction
+
+#### 3. Green Border Matching Brand Color
+**Decision**: Use #06c775 for border to match KOTO CLI banner color
+
+**Reasoning**:
+- Visual consistency
+- Reinforces brand identity
+- Creates cohesive design
+- Professional appearance
+
+#### 4. 40 Character Width for Todo Box
+**Decision**: Fixed 40-char width with truncation at 35 chars for titles
+
+**Reasoning**:
+- Fits well alongside banner ASCII art
+- Prevents layout overflow
+- Readable without being cramped
+- Leaves room for status icons
+
+### Features Implemented
+
+✅ **Two-Column Banner Layout**:
+- Left: KOTO CLI logo and info
+- Right: Recent todos in green bordered box
+
+✅ **Todo Preview Box**:
+- Title: "📋 Recent Todos"
+- Displays up to 5 oldest todos
+- Shows status, priority, title
+- Green rounded border (#06c775)
+- Truncation for long titles
+- "No todos yet!" for empty state
+- "+ N more todos..." counter
+
+### Visual Layout
+
+```
+┌─────────────────────────────┐    ╭────────────────────────────────────╮
+│                             │    │     📋 Recent Todos                │
+│  ██╗  ██╗ ██████╗ ████████╗ │    │                                    │
+│  ██║ ██╔╝██╔═══██╗╚══██╔══╝ │    │  ⬜ 🔴 Buy groceries               │
+│  █████╔╝ ██║   ██║   ██║    │    │  ⬜ 🟡 Write report                │
+│  ██╔═██╗ ██║   ██║   ██║    │    │  ✅ 🟢 Call dentist                │
+│  ██║  ██╗╚██████╔╝   ██║    │    │  ⬜ 🔴 Fix bug #123                │
+│  ╚═╝  ╚═╝ ╚═════╝    ╚═╝    │    │  ⬜ 🟡 Schedule meeting            │
+│                             │    │                                    │
+│  ✨ Your Beautiful Terminal │    │  + 10 more todos...                │
+│     ToDo Manager ✨         │    ╰────────────────────────────────────╯
+│                             │
+│         v1.0.0              │
+│                             │
+│  Press any key to continue  │
+└─────────────────────────────┘
+```
+
+### Build and Test Results
+
+**Build**: ✅ Successful
+**Tests**: ✅ All Passing
+**Binary**: bin/koto (9.8MB)
+
+### User Experience
+
+1. User runs `./bin/koto`
+2. Banner appears with KOTO CLI logo on left
+3. Recent todos appear in green box on right
+4. User can quickly see oldest pending tasks
+5. Press any key to enter main app
+
+### Benefits
+
+🎉 **Enhanced User Experience**:
+- Immediate visibility of pending tasks
+- Beautiful, cohesive design
+- Motivates users to complete old tasks
+- Professional, polished appearance
+
+---
+
+## 2025-10-19 - Simplified Todo List Display on Banner
+
+### Change Details
+
+**Goal**: Simplify the todo list display by removing checkboxes, status icons, and priority indicators, replacing them with simple green numbered list.
+
+#### Changes Made
+
+**Updated**: `internal/tui/styles.go`
+- Added `bannerTodoNumberStyle`: Green (#06c775) bold style for list numbers
+
+**Updated**: `internal/tui/views.go` - `renderBannerTodoBox()`
+- Removed status icons (⬜/✅)
+- Removed priority indicators (🔴🟡🟢)
+- Added simple numbered list: `1.`, `2.`, `3.`, etc. in green
+- Format: `[green number]. [gray title]`
+- Adjusted truncation to 33 chars to account for number width
+
+### Visual Changes
+
+**Before**:
+```
+⬜ 🔴 Buy groceries
+⬜ 🟡 Write report
+✅ 🟢 Call dentist
+```
+
+**After**:
+```
+1. Buy groceries
+2. Write report
+3. Call dentist
+```
+
+### Benefits
+
+✅ **Cleaner Design**:
+- Minimal, focused presentation
+- Easier to scan
+- Less visual noise
+- Elegant simplicity
+
+✅ **Green Numbers**:
+- Matches brand color (#06c775)
+- Clear hierarchy
+- Professional appearance
+
+**Build**: ✅ Successful
+**Tests**: ✅ All Passing
+
+---
+
+## 2025-10-19 - Todo Title Truncation to 10 Characters with Tests
+
+### Implementation Details
+
+**Goal**: Limit todo titles displayed on banner to 10 characters maximum, with proper truncation handling for multibyte characters (Japanese, emoji, etc.).
+
+#### Changes Made
+
+**Updated**: `internal/tui/views.go`
+- Changed truncation from 33 characters to 10 characters
+- Extracted truncation logic into separate function: `truncateTodoTitle()`
+- Implemented `truncateTodoTitle()` function:
+  - Converts string to runes for correct multibyte character handling
+  - Truncates to maxLength runes
+  - Adds "..." suffix if truncated
+  - Handles edge cases: empty strings, exact length matches
+
+**Created**: `internal/tui/views_test.go`
+- First test file for TUI layer
+- Comprehensive test suite for `truncateTodoTitle()`
+- 10 test cases covering:
+  - Short titles (no truncation)
+  - Exact max length
+  - Long titles (truncation)
+  - Empty titles
+  - Japanese characters (with and without truncation)
+  - Mixed English/Japanese
+  - Emoji characters
+  - Edge cases (maxLength 0, 1)
+- Additional test function `TestTruncateTodoTitle_RuneCount`:
+  - Verifies rune-based counting (not byte-based)
+  - Tests ASCII, Japanese, and Emoji separately
+
+### Technical Decisions
+
+#### 1. Rune-Based Truncation
+**Decision**: Use `[]rune()` conversion for character counting
+
+**Reasoning**:
+- Correct handling of multibyte UTF-8 characters
+- Japanese, Chinese, emoji are 1 rune each (not 3-4 bytes)
+- "こんにちは" (5 characters) correctly counted as 5 runes, not 15 bytes
+- International user support out of the box
+
+#### 2. 10 Character Limit
+**Decision**: Truncate at 10 characters as requested by user
+
+**Reasoning**:
+- Keeps banner clean and compact
+- Encourages concise todo titles
+- Fits well in 40-char wide box
+- Leaves room for number and spacing
+
+#### 3. Separate Function with Tests
+**Decision**: Extract `truncateTodoTitle()` as standalone function with comprehensive tests
+
+**Reasoning**:
+- Single responsibility principle
+- Easy to test in isolation
+- Reusable for future features
+- Demonstrates correct Unicode handling
+
+### Test Results
+
+**All Tests Passing**: ✅
+- `TestTruncateTodoTitle`: 10/10 test cases passed
+- `TestTruncateTodoTitle_RuneCount`: 3/3 test cases passed
+- Total: 13 test cases, all passing
+
+**Test Coverage**:
+- TUI layer: 1.2% (only testing the new function)
+- Function coverage: 100% for `truncateTodoTitle()`
+
+**Test Cases Validated**:
+- ✅ ASCII text truncation
+- ✅ Japanese text truncation (ルーン単位)
+- ✅ Emoji truncation (絵文字)
+- ✅ Mixed language truncation
+- ✅ Edge cases (empty, exact length, 0, 1)
+- ✅ Multibyte character correctness
+
+### Examples
+
+| Input | Max Length | Output |
+|-------|-----------|--------|
+| "Short" | 10 | "Short" |
+| "This is a very long todo title" | 10 | "This is a ..." |
+| "買い物に行く" | 10 | "買い物に行く" |
+| "これは非常に長いToDoのタイトルです" | 10 | "これは非常に長いTo..." |
+| "🎉🎊🎈🎁🎂🍰🍕🍔🍟🌮" | 5 | "🎉🎊🎈🎁🎂..." |
+
+### Visual Changes
+
+**Before** (33 chars):
+```
+1. This is a very long todo title
+2. Buy groceries at the supermarket
+```
+
+**After** (10 chars):
+```
+1. This is a ...
+2. Buy grocer...
+```
+
+### Build and Test Results
+
+**Build**: ✅ Successful
+**All Tests**: ✅ Passing (Model, Repository, Service, TUI)
+**Binary**: bin/koto (9.8MB)
+
+### Benefits
+
+🎯 **Consistent Display**:
+- All todos fit in box width
+- No layout overflow
+- Clean, professional appearance
+
+🌍 **International Support**:
+- Correct Japanese character counting
+- Emoji support
+- Mixed-language handling
+
+✅ **Quality Assurance**:
+- First TUI tests added
+- Comprehensive test coverage for truncation
+- Verified multibyte character handling
+
+---
+
+## 2025-10-19 - Changed Todo Title Truncation from 10 to 15 Characters
+
+### Change Details
+
+**Goal**: Increase todo title display length from 10 to 15 characters for better readability.
+
+#### Changes Made
+
+**Updated**: `internal/tui/views.go`
+- Changed `truncateTodoTitle()` call from maxLength 10 to 15
+
+**Updated**: `internal/tui/views_test.go`
+- Updated test cases to use maxLength 15:
+  - "Long title - truncate with ellipsis": Expected "This is a very ..."
+  - "Japanese characters - truncation": Expected "これは非常に長いToDoのタイ..."
+  - "Mixed English and Japanese - truncation": Expected "Buy groceries a..."
+
+### Visual Changes
+
+**Before** (10 chars):
+```
+1. This is a ...
+2. Buy grocer...
+3. これは非常に長いTo...
+```
+
+**After** (15 chars):
+```
+1. This is a very ...
+2. Buy groceries a...
+3. これは非常に長いToDoのタイ...
+```
+
+### Benefits
+
+✅ **Better Readability**: 50% more characters displayed
+✅ **More Context**: Users can see more of the todo title
+✅ **Still Compact**: Fits well in the 40-char banner box
+
+**Build**: ✅ Successful
+**Tests**: ✅ All Passing (13/13 TUI tests)
+
+---

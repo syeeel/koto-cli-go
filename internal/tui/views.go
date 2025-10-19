@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/syeeel/koto-cli-go/internal/model"
 )
 
@@ -193,28 +194,94 @@ func (m Model) renderHelpView() string {
 
 // renderBannerView renders the startup banner screen
 func (m Model) renderBannerView() string {
-	var s strings.Builder
-
-	// Add some vertical padding
-	s.WriteString("\n\n\n")
+	// Left column: Banner
+	var leftCol strings.Builder
+	leftCol.WriteString("\n\n")
 
 	// Render the ASCII art banner
 	banner := GetBanner()
-	s.WriteString(bannerStyle.Render(banner))
-	s.WriteString("\n\n")
+	leftCol.WriteString(bannerStyle.Render(banner))
+	leftCol.WriteString("\n\n")
 
 	// Render subtitle
 	subtitle := GetSubtitle()
-	s.WriteString(bannerSubtitleStyle.Render(subtitle))
-	s.WriteString("\n\n")
+	leftCol.WriteString(bannerSubtitleStyle.Render(subtitle))
+	leftCol.WriteString("\n\n")
 
 	// Render version
 	version := GetVersion()
-	s.WriteString(bannerVersionStyle.Render(version))
-	s.WriteString("\n")
+	leftCol.WriteString(bannerVersionStyle.Render(version))
+	leftCol.WriteString("\n")
 
 	// Render "press any key" prompt
-	s.WriteString(bannerPromptStyle.Render("Press any key to continue..."))
+	leftCol.WriteString(bannerPromptStyle.Render("Press any key to continue..."))
 
-	return s.String()
+	// Right column: Recent Todos
+	rightCol := m.renderBannerTodoBox()
+
+	// Join columns horizontally with spacing
+	content := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		leftCol.String(),
+		strings.Repeat(" ", 4), // spacing between columns
+		rightCol,
+	)
+
+	// Add top padding
+	return "\n\n" + content
+}
+
+// renderBannerTodoBox renders the todo list box on the banner screen
+func (m Model) renderBannerTodoBox() string {
+	var content strings.Builder
+
+	// Title
+	content.WriteString(bannerTodoTitleStyle.Render("📋 Recent Todos"))
+	content.WriteString("\n\n")
+
+	// Get oldest 5 todos (sorted by creation date)
+	if len(m.todos) == 0 {
+		content.WriteString(emptyStyle.Render("No todos yet!"))
+	} else {
+		// Display up to 5 oldest todos
+		count := len(m.todos)
+		if count > 5 {
+			count = 5
+		}
+
+		for i := 0; i < count; i++ {
+			todo := m.todos[i]
+
+			// Number in green
+			number := bannerTodoNumberStyle.Render(fmt.Sprintf("%d.", i+1))
+
+			// Title - truncate if longer than 15 characters
+			title := truncateTodoTitle(todo.Title, 15)
+
+			// Format: number title
+			line := fmt.Sprintf("%s %s", number, bannerTodoItemStyle.Render(title))
+
+			content.WriteString(line)
+			content.WriteString("\n")
+		}
+
+		// Show count if there are more
+		if len(m.todos) > 5 {
+			content.WriteString("\n")
+			content.WriteString(helpStyle.Render(fmt.Sprintf("+ %d more todos...", len(m.todos)-5)))
+		}
+	}
+
+	// Wrap in border box
+	return bannerTodoBoxStyle.Render(content.String())
+}
+
+// truncateTodoTitle truncates a todo title to maxLength characters, adding "..." if truncated
+func truncateTodoTitle(title string, maxLength int) string {
+	// Convert to runes to handle multibyte characters correctly
+	runes := []rune(title)
+	if len(runes) <= maxLength {
+		return title
+	}
+	return string(runes[:maxLength]) + "..."
 }

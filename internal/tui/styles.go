@@ -79,4 +79,26 @@ var (
 		Italic(true).
 		Align(lipgloss.Center).
 		MarginTop(2)
+
+	// bannerTodoBoxStyle is the style for the todo list box on the banner screen
+	bannerTodoBoxStyle = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#06c775")).
+		Padding(1, 2).
+		Width(40)
+
+	// bannerTodoTitleStyle is the style for the todo box title
+	bannerTodoTitleStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#06c775")).
+		Bold(true).
+		Align(lipgloss.Center)
+
+	// bannerTodoItemStyle is the style for todo items in the banner
+	bannerTodoItemStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252"))
+
+	// bannerTodoNumberStyle is the style for todo item numbers
+	bannerTodoNumberStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#06c775")).
+		Bold(true)
 )
