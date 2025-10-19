@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "WebSearch",
+      "Bash(node --version)",
+      "Bash(npx --version)",
+      "Read(//home/gopher/.claude/**)",
+      "Bash(cat ~/.claude/.claude.json)"
     ],
     "deny": [],
     "ask": []

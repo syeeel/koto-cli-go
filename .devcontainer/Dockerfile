@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nano \
   vim \
   ca-certificates \
+  sqlite3 \
   && curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
   && apt-get install -y nodejs \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
