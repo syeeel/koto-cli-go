@@ -302,6 +302,7 @@ go tool cover -html=coverage.out
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) - ターミナルスタイリング
 - [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) - Pure Go SQLite
 
+
 ## 💡 FAQ
 
 ### Q: データはどこに保存されますか？
