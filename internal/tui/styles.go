@@ -40,9 +40,10 @@ var (
 		Foreground(fgDim).
 		MarginTop(1)
 
-	// selectedStyle is the style for selected items (neon green text, transparent background)
+	// selectedStyle is the style for selected items (neon green background, dark text)
 	selectedStyle = lipgloss.NewStyle().
-		Foreground(fgSelected).
+		Foreground(lipgloss.Color("#1e1e2e")).
+		Background(fgSelected).
 		Bold(true)
 
 	// todoItemStyle is the style for regular todo items (transparent background)

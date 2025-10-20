@@ -1884,13 +1884,18 @@ No.  │ Title                          │ Description                    │ C
 
 ### Implementation Overview
 
-**Goal**: Modernize the UI with transparent backgrounds, neon green selection highlighting, and wider columns for better readability.
+**Goal**: Modernize the UI with transparent backgrounds, neon green selection highlighting (background), and wider columns for better readability.
 
-**User Request**:
+**User Requests**:
 > "すごく良いのですが、以下の3点を改修してください。
 > 1.背景は透明で良いです。
 > 2.幅をもう少し広げてください。
 > 3.選択した時に、文字の色は蛍光色の緑にしてください。"
+
+**Correction**:
+> "提示したイメージを良く見てください。選択したtaskは緑で囲まれていますよね？こちらに修正してください。"
+
+Changed from neon green text to neon green **background** for selection.
 
 ### Implementation Details
 
@@ -1929,25 +1934,35 @@ todoItemStyle = lipgloss.NewStyle().
 
 **Modified**: `internal/tui/styles.go`
 
-Changed selection from lime green background to neon green text:
+Changed selection to neon green **background** with dark text:
 
 ```go
-// New neon green color for selection
-fgSelected = lipgloss.Color("#39ff14")  // Neon green for selected text
+// Neon green color for selection background
+fgSelected = lipgloss.Color("#39ff14")  // Neon green
 
-// Updated selection style
+// Updated selection style - green background, dark text
 selectedStyle = lipgloss.NewStyle().
-    Foreground(fgSelected).
+    Foreground(lipgloss.Color("#1e1e2e")).  // Dark text for contrast
+    Background(fgSelected).                  // Neon green background
     Bold(true)
 ```
 
+**Initial Implementation** (later corrected):
+- First attempted neon green text on transparent background
+- User clarified: reference image shows green background, not green text
+
+**Final Implementation**:
+- Neon green background (#39ff14)
+- Dark text (#1e1e2e) for high contrast and readability
+- Bold styling for emphasis
+
 **Removed**:
 - Zebra striping (alternating row backgrounds)
-- Background highlighting for selection
 
 **Benefits**:
-- High visibility selection indicator
-- Works with any terminal background color
+- High visibility selection indicator matching reference image
+- Entire row is highlighted with green background
+- Dark text ensures readability on green background
 - Clean, modern appearance
 
 #### 3. Increased Column Widths
@@ -2022,10 +2037,10 @@ desc = padStringToWidth(desc, 40)
 
 ### Visual Changes
 
-**Color Palette** (All with transparent backgrounds):
+**Color Palette** (Transparent backgrounds except selection):
 - Default text: `#cdd6f4` (light)
 - Header text: `#f5e0dc` (lighter)
-- Selected text: `#39ff14` (neon green) ⭐ NEW
+- Selected row: `#39ff14` background with `#1e1e2e` text (neon green) ⭐ NEW
 - Dimmed text: `#6c7086`
 - Completed items: `#585b70` (with strikethrough)
 - Accent green: `#a6e3a1` (title, prompts)
@@ -2040,11 +2055,12 @@ desc = padStringToWidth(desc, 40)
 └─────────────────────────────────────┘
 ```
 
-**After** (Transparent, neon green text):
+**After** (Transparent, neon green background):
 ```
 ┌─────────────────────────────────────┐
 │ Transparent - terminal bg shows     │
-│ Selected: Neon green text (#39ff14) │
+│ Selected: Green bg (#39ff14) + dark │
+│           text (#1e1e2e)             │
 │ Clean rows: no alternating bg       │
 └─────────────────────────────────────┘
 ```
@@ -2094,10 +2110,11 @@ ok      github.com/syeeel/koto-cli-go/internal/tui          0.002s
 - Contemporary CLI aesthetic
 
 ✨ **High Visibility Selection**:
-- Neon green text (#39ff14) immediately draws attention
+- Neon green background (#39ff14) immediately draws attention
+- Dark text (#1e1e2e) ensures readability on green background
 - Bold styling enhances visibility
-- Works on all background colors
-- No background color conflicts
+- Entire row is highlighted, matching reference image
+- Works perfectly with transparent theme
 
 📖 **Better Readability**:
 - 40-character columns provide more context
@@ -2119,11 +2136,12 @@ ok      github.com/syeeel/koto-cli-go/internal/tui          0.002s
 - 30-character columns
 - Zebra striping
 
-**After**: Transparent theme with neon highlights
+**After**: Transparent theme with neon green selection background
 - ✅ Terminal background shows through
-- ✅ Neon green selection text
+- ✅ Neon green selection background (#39ff14) with dark text (#1e1e2e)
 - ✅ 40-character columns
 - ✅ Clean rows without alternating backgrounds
+- ✅ Matches reference image perfectly
 
 ### Remaining Work
 
@@ -2131,8 +2149,8 @@ ok      github.com/syeeel/koto-cli-go/internal/tui          0.002s
 - ✅ Table format with proper columns
 - ✅ Japanese character alignment (display width)
 - ✅ Modern dark theme design
-- ✅ Transparent backgrounds
-- ✅ Neon green selection
+- ✅ Transparent backgrounds (except selection)
+- ✅ Neon green selection background with dark text (matching reference image)
 - ✅ Optimized column widths (40 chars)
 
 **Future Enhancements** (if needed):
