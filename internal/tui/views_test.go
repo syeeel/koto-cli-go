@@ -1,6 +1,10 @@
 package tui
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/mattn/go-runewidth"
+)
 
 func TestTruncateTodoTitle(t *testing.T) {
 	tests := []struct {
@@ -129,6 +133,87 @@ func TestTruncateTodoTitle_RuneCount(t *testing.T) {
 					t.Errorf("truncateTodoTitle(%q, %d) = %q with %d runes; expected %d runes",
 						tt.title, tt.maxLength, result, len(runes), expectedLength)
 				}
+			}
+		})
+	}
+}
+
+func TestTruncateStringByWidth(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		maxWidth  int
+	}{
+		{"Short ASCII", "test", 10},
+		{"Long ASCII", "This is a very long string", 10},
+		{"Short Japanese", "テスト", 10},
+		{"Long Japanese", "これは非常に長い文字列です", 10},
+		{"Mixed short", "test テスト", 15},
+		{"Exact width ASCII", "12345", 5},
+		{"Exact width Japanese", "あい", 4},
+		{"Empty string", "", 10},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateStringByWidth(tt.input, tt.maxWidth)
+			actualWidth := runewidth.StringWidth(result)
+
+			if actualWidth > tt.maxWidth {
+				t.Errorf("truncateStringByWidth(%q, %d) = %q (width %d), exceeds maxWidth %d",
+					tt.input, tt.maxWidth, result, actualWidth, tt.maxWidth)
+			}
+
+			originalWidth := runewidth.StringWidth(tt.input)
+			if originalWidth <= tt.maxWidth {
+				if result != tt.input {
+					t.Errorf("truncateStringByWidth(%q, %d) = %q, want %q (no truncation)",
+						tt.input, tt.maxWidth, result, tt.input)
+				}
+			} else {
+				if len(result) < 3 || result[len(result)-3:] != "..." {
+					t.Errorf("truncateStringByWidth(%q, %d) = %q, should end with '...'",
+						tt.input, tt.maxWidth, result)
+				}
+			}
+		})
+	}
+}
+
+func TestPadStringToWidth(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		width int
+	}{
+		{"ASCII short", "test", 10},
+		{"ASCII exact", "test", 4},
+		{"ASCII long", "testing", 5},
+		{"Japanese short", "テスト", 10},
+		{"Japanese exact", "あい", 4},
+		{"Mixed", "test あ", 10},
+		{"Empty", "", 5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := padStringToWidth(tt.input, tt.width)
+			actualWidth := runewidth.StringWidth(result)
+
+			inputWidth := runewidth.StringWidth(tt.input)
+			expectedWidth := tt.width
+			if inputWidth > tt.width {
+				expectedWidth = inputWidth
+			}
+
+			if actualWidth != expectedWidth {
+				t.Errorf("padStringToWidth(%q, %d) width = %d, want %d. Result: %q",
+					tt.input, tt.width, actualWidth, expectedWidth, result)
+			}
+
+			if actualWidth < inputWidth {
+				t.Errorf("padStringToWidth(%q, %d) resulted in shorter width %d < %d",
+					tt.input, tt.width, actualWidth, inputWidth)
 			}
 		})
 	}

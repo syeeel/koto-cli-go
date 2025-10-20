@@ -512,28 +512,39 @@ func (m Model) renderListView() string {
     if len(m.todos) == 0 {
         s += emptyStyle.Render("ToDoがありません。/add で新しいToDoを追加してください。") + "\n"
     } else {
+        // ヘッダー行
+        s += headerStyle.Render("No.  Title                Description          Created At") + "\n"
+        s += separatorStyle.Render(strings.Repeat("─", 80)) + "\n"
+
         for i, todo := range m.todos {
             cursor := " "
             if m.cursor == i {
                 cursor = ">"
             }
 
-            status := "⬜"
-            if todo.IsCompleted() {
-                status = "✅"
+            // No. (ID)
+            no := fmt.Sprintf("%-4d", todo.ID)
+
+            // Title (最大20文字、切り詰め)
+            title := truncateString(todo.Title, 20)
+
+            // Description (最大20文字、切り詰め)
+            desc := truncateString(todo.Description, 20)
+
+            // Created At (日付のみ)
+            created := todo.CreatedAt.Format("2006-01-02")
+
+            // 行の組み立て
+            line := fmt.Sprintf("%s %s %s %s %s", cursor, no, title, desc, created)
+
+            if m.cursor == i {
+                s += selectedStyle.Render(line) + "\n"
+            } else {
+                s += line + "\n"
             }
 
-            priority := ""
-            switch todo.Priority {
-            case model.PriorityHigh:
-                priority = "🔴"
-            case model.PriorityMedium:
-                priority = "🟡"
-            case model.PriorityLow:
-                priority = "🟢"
-            }
-
-            s += fmt.Sprintf("%s %s %s %s\n", cursor, status, priority, todo.Title)
+            // 区切り線
+            s += separatorStyle.Render(strings.Repeat("─", 80)) + "\n"
         }
     }
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mattn/go-runewidth"
 	"github.com/syeeel/koto-cli-go/internal/model"
 )
 
@@ -28,15 +29,25 @@ func (m Model) View() string {
 func (m Model) renderListView() string {
 	var s strings.Builder
 
-	// Title
-	s.WriteString(titleStyle.Render("📝 koto - ToDo Manager"))
+	// Title with dark background
+	s.WriteString(titleStyle.Render(" 📝 koto - ToDo Manager "))
 	s.WriteString("\n\n")
 
 	// Todo list
 	if len(m.todos) == 0 {
-		s.WriteString(emptyStyle.Render("No todos yet. Use /add to create your first todo!"))
+		s.WriteString(emptyStyle.Render("  No todos yet. Use /add to create your first todo!  "))
 		s.WriteString("\n")
 	} else {
+		// Header with fixed widths: No.(4), Title(40), Description(40), Create Date(11)
+		headerNo := padStringToWidth("No.", 4)
+		headerTitle := padStringToWidth("Title", 40)
+		headerDesc := padStringToWidth("Description", 40)
+		headerDate := padStringToWidth("Create Date", 11)
+		header := fmt.Sprintf(" %s   %s   %s   %s ", headerNo, headerTitle, headerDesc, headerDate)
+		s.WriteString(headerStyle.Render(header))
+		s.WriteString("\n")
+
+		// Todo items (no separator lines between items for cleaner look)
 		for i, todo := range m.todos {
 			s.WriteString(m.renderTodoItem(i, todo))
 			s.WriteString("\n")
@@ -68,55 +79,83 @@ func (m Model) renderListView() string {
 	return s.String()
 }
 
-// renderTodoItem renders a single todo item
+// renderTodoItem renders a single todo item in table format
 func (m Model) renderTodoItem(index int, todo *model.Todo) string {
-	var s strings.Builder
+	// No. (ID) - width: 4
+	no := fmt.Sprintf("%d", todo.ID)
+	no = padStringToWidth(no, 4)
 
-	// Cursor
-	cursor := "  "
+	// Title - width: 40 (display width, not character count)
+	title := truncateStringByWidth(todo.Title, 40)
+	title = padStringToWidth(title, 40)
+
+	// Description - width: 40 (display width, not character count)
+	desc := truncateStringByWidth(todo.Description, 40)
+	desc = padStringToWidth(desc, 40)
+
+	// Create Date (format: YYYY-MM-DD) - width: 11
+	createDate := todo.CreatedAt.Format("2006-01-02")
+	createDate = padStringToWidth(createDate, 11)
+
+	// Build the row with spacing (no vertical separators for cleaner look)
+	row := fmt.Sprintf(" %s   %s   %s   %s ", no, title, desc, createDate)
+
+	// Apply cursor style if selected (neon green text, transparent background)
 	if m.cursor == index {
-		cursor = selectedStyle.Render("> ")
-	} else {
-		cursor = "  "
+		return selectedStyle.Render(row)
 	}
-	s.WriteString(cursor)
 
-	// Status checkbox
-	status := "⬜"
+	// Apply completed style if todo is completed
 	if todo.IsCompleted() {
-		status = "✅"
+		return completedItemStyle.Render(row)
 	}
-	s.WriteString(status)
-	s.WriteString(" ")
 
-	// Priority indicator
-	priority := m.renderPriority(todo.Priority)
-	s.WriteString(priority)
-	s.WriteString(" ")
+	// No alternating backgrounds - transparent background for all rows
+	return todoItemStyle.Render(row)
+}
 
-	// ID
-	s.WriteString(fmt.Sprintf("[%d] ", todo.ID))
+// truncateString truncates a string to maxLength characters (deprecated, use truncateStringByWidth)
+func truncateString(s string, maxLength int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLength {
+		return s
+	}
+	return string(runes[:maxLength-3]) + "..."
+}
 
-	// Title (with strike-through for completed)
-	title := todo.Title
-	if todo.IsCompleted() {
-		title = completedItemStyle.Render(title)
-	} else {
-		if m.cursor == index {
-			title = selectedStyle.Render(title)
-		} else {
-			title = todoItemStyle.Render(title)
+// truncateStringByWidth truncates a string based on display width
+// considering that fullwidth characters (Japanese, Chinese, etc.) take 2 cells
+func truncateStringByWidth(s string, maxWidth int) string {
+	width := runewidth.StringWidth(s)
+	if width <= maxWidth {
+		return s
+	}
+
+	// Build string until we reach maxWidth - 3 (for "...")
+	targetWidth := maxWidth - 3
+	result := ""
+	currentWidth := 0
+
+	for _, r := range s {
+		charWidth := runewidth.RuneWidth(r)
+		if currentWidth+charWidth > targetWidth {
+			break
 		}
-	}
-	s.WriteString(title)
-
-	// Due date indicator (if overdue)
-	if todo.IsOverdue() {
-		s.WriteString(" ")
-		s.WriteString(errorStyle.Render("⚠ OVERDUE"))
+		result += string(r)
+		currentWidth += charWidth
 	}
 
-	return s.String()
+	return result + "..."
+}
+
+// padStringToWidth pads a string to a specific display width
+func padStringToWidth(s string, width int) string {
+	currentWidth := runewidth.StringWidth(s)
+	if currentWidth >= width {
+		return s
+	}
+	padding := width - currentWidth
+	return s + strings.Repeat(" ", padding)
 }
 
 // renderPriority renders the priority indicator
@@ -137,10 +176,15 @@ func (m Model) renderPriority(priority model.Priority) string {
 func (m Model) renderHelpView() string {
 	var s strings.Builder
 
-	s.WriteString(titleStyle.Render("📖 koto - Help"))
+	// Title with dark background
+	title := titleStyle.Render(" 📖 koto - Help ")
+	s.WriteString(title)
 	s.WriteString("\n\n")
 
-	s.WriteString("COMMANDS:\n\n")
+	// Commands header with style
+	cmdHeader := headerStyle.Render(" COMMANDS ")
+	s.WriteString(cmdHeader)
+	s.WriteString("\n\n")
 
 	commands := []struct {
 		command string
@@ -167,27 +211,44 @@ func (m Model) renderHelpView() string {
 		{"/quit", "Quit the application", "/quit"},
 	}
 
+	// Command items with transparent background
+	cmdStyle := lipgloss.NewStyle().Foreground(accentGreen).Bold(true)
+	descStyle := lipgloss.NewStyle().Foreground(fgDefault)
+	exampleLabelStyle := lipgloss.NewStyle().Foreground(fgDim).Italic(true)
+
 	for _, cmd := range commands {
 		if cmd.command == "" {
 			s.WriteString("\n")
 			continue
 		}
-		s.WriteString(fmt.Sprintf("  %-45s %s\n", selectedStyle.Render(cmd.command), cmd.desc))
+		s.WriteString(fmt.Sprintf("  %s  %s\n",
+			cmdStyle.Render(fmt.Sprintf("%-45s", cmd.command)),
+			descStyle.Render(cmd.desc)))
 		if cmd.example != "" {
-			s.WriteString(fmt.Sprintf("    %s %s\n", helpStyle.Render("Example:"), cmd.example))
+			s.WriteString(fmt.Sprintf("    %s %s\n",
+				exampleLabelStyle.Render("Example:"),
+				descStyle.Render(cmd.example)))
 		}
 	}
 
-	s.WriteString("\n\nKEYBOARD SHORTCUTS:\n\n")
-	s.WriteString("  ↑/k       Move cursor up\n")
-	s.WriteString("  ↓/j       Move cursor down\n")
-	s.WriteString("  Enter     Execute command\n")
-	s.WriteString("  Esc       Clear input\n")
-	s.WriteString("  ?         Toggle help\n")
-	s.WriteString("  Ctrl+C    Quit\n")
+	s.WriteString("\n")
+	kbHeader := headerStyle.Render(" KEYBOARD SHORTCUTS ")
+	s.WriteString(kbHeader)
+	s.WriteString("\n\n")
+
+	// Keyboard shortcuts with style
+	keyStyle := lipgloss.NewStyle().Foreground(accentGreen).Bold(true)
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("↑/k      "), descStyle.Render("Move cursor up")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("↓/j      "), descStyle.Render("Move cursor down")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("Enter    "), descStyle.Render("Execute command")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("Esc      "), descStyle.Render("Clear input")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("?        "), descStyle.Render("Toggle help")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("Ctrl+C   "), descStyle.Render("Quit")))
 
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("Press 'q', 'Esc', or 'Ctrl+C' to return to the main view"))
+	footerStyle := lipgloss.NewStyle().Foreground(fgDim).Italic(true)
+	s.WriteString(footerStyle.Render("  Press 'q', 'Esc', or 'Ctrl+C' to return to the main view  "))
+	s.WriteString("\n")
 
 	return s.String()
 }

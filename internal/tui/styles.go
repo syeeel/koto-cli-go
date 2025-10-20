@@ -3,44 +3,59 @@ package tui
 import "github.com/charmbracelet/lipgloss"
 
 var (
-	// titleStyle is the style for the application title
+	// Theme colors (transparent backgrounds)
+	fgDefault       = lipgloss.Color("#cdd6f4")   // Light text
+	fgHeader        = lipgloss.Color("#f5e0dc")   // Header text (lighter)
+	fgSelected      = lipgloss.Color("#39ff14")   // Neon green for selected text
+	fgDim           = lipgloss.Color("#6c7086")   // Dimmed text
+	fgCompleted     = lipgloss.Color("#585b70")   // Completed items
+	accentGreen     = lipgloss.Color("#a6e3a1")   // Accent color
+	accentRed       = lipgloss.Color("#f38ba8")   // Error color
+	separatorColor  = lipgloss.Color("#313244")   // Subtle separator
+
+	// titleStyle is the style for the application title (transparent background)
 	titleStyle = lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("205")).
+		Foreground(accentGreen).
+		Padding(0, 1).
 		MarginBottom(1)
 
-	// emptyStyle is the style for empty state messages
+	// emptyStyle is the style for empty state messages (transparent background)
 	emptyStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
+		Foreground(fgDim).
 		Italic(true)
 
-	// messageStyle is the style for success messages
+	// messageStyle is the style for success messages (transparent background)
 	messageStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42")).
+		Foreground(accentGreen).
 		Bold(true)
 
-	// errorStyle is the style for error messages
+	// errorStyle is the style for error messages (transparent background)
 	errorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("196")).
+		Foreground(accentRed).
 		Bold(true)
 
-	// helpStyle is the style for help text
+	// helpStyle is the style for help text (transparent background)
 	helpStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
+		Foreground(fgDim).
 		MarginTop(1)
 
-	// selectedStyle is the style for selected items
+	// selectedStyle is the style for selected items (neon green text, transparent background)
 	selectedStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("212")).
+		Foreground(fgSelected).
 		Bold(true)
 
-	// todoItemStyle is the style for regular todo items
+	// todoItemStyle is the style for regular todo items (transparent background)
 	todoItemStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("252"))
+		Foreground(fgDefault)
 
-	// completedItemStyle is the style for completed todo items
+	// todoItemAltStyle is the style for alternate row todo items (transparent background)
+	todoItemAltStyle = lipgloss.NewStyle().
+		Foreground(fgDefault)
+
+	// completedItemStyle is the style for completed todo items (transparent background)
 	completedItemStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
+		Foreground(fgCompleted).
 		Strikethrough(true)
 
 	// highPriorityStyle is the style for high priority indicator
@@ -101,4 +116,18 @@ var (
 	bannerTodoNumberStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#06c775")).
 		Bold(true)
+
+	// headerStyle is the style for table headers (transparent background)
+	headerStyle = lipgloss.NewStyle().
+		Foreground(fgHeader).
+		Bold(true).
+		Underline(true)
+
+	// separatorStyle is the style for table separators (transparent background)
+	separatorStyle = lipgloss.NewStyle().
+		Foreground(separatorColor)
+
+	// inputStyle is the style for input field (transparent background)
+	inputStyle = lipgloss.NewStyle().
+		Foreground(fgDefault)
 )

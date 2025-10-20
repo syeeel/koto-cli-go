@@ -9,7 +9,12 @@
       "Bash(cat ~/.claude/.claude.json)",
       "Bash(go test :*)",
       "Bash(find :*)",
-      "Bash(sqlite3 :*)"
+      "Bash(sqlite3 :*)",
+      "Bash(go build -o bin/koto ./cmd/koto)",
+      "Bash(go test ./internal/tui/...)",
+      "Bash(go test ./...)",
+      "Bash(go get github.com/mattn/go-runewidth)",
+      "Bash(go test ./internal/tui/... -v)"
     ],
     "deny": [],
     "ask": []
