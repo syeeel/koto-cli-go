@@ -74,7 +74,7 @@ func (m Model) renderListView() string {
 
 	// Help text
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("Commands: /add, /list, /done, /delete, /edit, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: Ctrl+C"))
+	s.WriteString(helpStyle.Render("Commands: /add, /list, /done, /delete, /edit, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: /exit or Ctrl+C"))
 
 	return s.String()
 }
@@ -208,7 +208,7 @@ func (m Model) renderHelpView() string {
 		{"/import <filepath>", "Import todos from JSON", "/import ~/todos.json"},
 		{"", "", ""},
 		{"/help", "Show this help screen", "/help"},
-		{"/quit", "Quit the application", "/quit"},
+		{"/exit", "Quit the application", "/exit"},
 	}
 
 	// Command items with transparent background

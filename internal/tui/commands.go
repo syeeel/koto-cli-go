@@ -70,7 +70,7 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
 			return handleImportCommand(ctx, svc, args)
 		case "/help":
 			return commandExecutedMsg{message: "Press '?' to view help"}
-		case "/quit":
+		case "/exit":
 			return tea.Quit()
 		default:
 			return commandExecutedMsg{
