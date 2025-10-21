@@ -54,8 +54,6 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
 
 		// Execute command
 		switch command {
-		case "/add":
-			return handleAddCommand(ctx, svc, args)
 		case "/edit":
 			return handleEditCommand(ctx, svc, args)
 		case "/delete":
@@ -86,65 +84,6 @@ func loadTodos(svc *service.TodoService) tea.Cmd {
 		todos, err := svc.ListTodos(context.Background())
 		return todosLoadedMsg{todos: todos, err: err}
 	}
-}
-
-// handleAddCommand handles the /add command
-func handleAddCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
-	if len(args) == 0 {
-		return commandExecutedMsg{err: errors.New("usage: /add <title> [--desc=<description>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]")}
-	}
-
-	// Parse arguments
-	var title string
-	var description string
-	priority := model.PriorityMedium
-	var dueDate *time.Time
-
-	for i, arg := range args {
-		if strings.HasPrefix(arg, "--desc=") {
-			description = strings.TrimPrefix(arg, "--desc=")
-			description = strings.Trim(description, "\"'")
-		} else if strings.HasPrefix(arg, "--priority=") {
-			priorityStr := strings.TrimPrefix(arg, "--priority=")
-			switch strings.ToLower(priorityStr) {
-			case "low":
-				priority = model.PriorityLow
-			case "medium":
-				priority = model.PriorityMedium
-			case "high":
-				priority = model.PriorityHigh
-			default:
-				return commandExecutedMsg{err: errors.New("invalid priority (use: low, medium, high)")}
-			}
-		} else if strings.HasPrefix(arg, "--due=") {
-			dueDateStr := strings.TrimPrefix(arg, "--due=")
-			parsedDate, err := time.Parse("2006-01-02", dueDateStr)
-			if err != nil {
-				return commandExecutedMsg{err: fmt.Errorf("invalid due date format (use YYYY-MM-DD): %w", err)}
-			}
-			dueDate = &parsedDate
-		} else {
-			// This is part of the title
-			if title == "" {
-				title = arg
-			} else if i == 1 && !strings.HasPrefix(args[i-1], "--") {
-				// Allow multi-word titles
-				title = title + " " + arg
-			}
-		}
-	}
-
-	if title == "" {
-		return commandExecutedMsg{err: errors.New("title is required")}
-	}
-
-	// Add the todo
-	todo, err := svc.AddTodo(ctx, title, description, priority, dueDate)
-	if err != nil {
-		return commandExecutedMsg{err: err}
-	}
-
-	return commandExecutedMsg{message: fmt.Sprintf("Added todo #%d: %s", todo.ID, todo.Title)}
 }
 
 // handleEditCommand handles the /edit command

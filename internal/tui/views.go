@@ -20,6 +20,8 @@ func (m Model) View() string {
 		return m.renderBannerView()
 	case ViewModeHelp:
 		return m.renderHelpView()
+	case ViewModeAddTodo:
+		return m.renderAddTodoView()
 	default:
 		return m.renderListView()
 	}
@@ -172,13 +174,18 @@ func (m Model) renderPriority(priority model.Priority) string {
 	}
 }
 
-// renderHelpView renders the help screen
-func (m Model) renderHelpView() string {
+// renderHelpContent generates the help content for viewport
+func (m Model) renderHelpContent() string {
 	var s strings.Builder
 
 	// Title with dark background
 	title := titleStyle.Render(" 📖 koto - Help ")
 	s.WriteString(title)
+	s.WriteString("\n\n")
+
+	// Scroll hint
+	scrollHintStyle := lipgloss.NewStyle().Foreground(accentGreen).Italic(true)
+	s.WriteString(scrollHintStyle.Render("  💡 You can scroll this page using ↑/↓ or j/k keys  "))
 	s.WriteString("\n\n")
 
 	// Commands header with style
@@ -191,10 +198,9 @@ func (m Model) renderHelpView() string {
 		desc    string
 		example string
 	}{
-		{"/add <title>", "Add a new todo", "/add Buy groceries"},
-		{"/add <title> --desc=<description>", "Add todo with description", "/add Study --desc=\"Chapter 5\""},
-		{"/add <title> --priority=<low|medium|high>", "Add todo with priority", "/add Report --priority=high"},
-		{"/add <title> --due=<YYYY-MM-DD>", "Add todo with due date", "/add Project --due=2025-12-31"},
+		{"/add", "Add a new todo (interactive)", "/add"},
+		{"", "  → Step 1: Enter title", ""},
+		{"", "  → Step 2: Enter description (optional)", ""},
 		{"", "", ""},
 		{"/list", "List all todos", "/list"},
 		{"/list --status=<pending|completed>", "List by status", "/list --status=pending"},
@@ -246,11 +252,28 @@ func (m Model) renderHelpView() string {
 	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("Ctrl+C   "), descStyle.Render("Quit")))
 
 	s.WriteString("\n")
+
+	// Scroll help
+	s.WriteString(headerStyle.Render(" SCROLL NAVIGATION "))
+	s.WriteString("\n\n")
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("↑/k      "), descStyle.Render("Scroll up one line")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("↓/j      "), descStyle.Render("Scroll down one line")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("Space/f  "), descStyle.Render("Page down")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("b        "), descStyle.Render("Page up")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("g        "), descStyle.Render("Go to top")))
+	s.WriteString(fmt.Sprintf("  %s  %s\n", keyStyle.Render("G        "), descStyle.Render("Go to bottom")))
+
+	s.WriteString("\n")
 	footerStyle := lipgloss.NewStyle().Foreground(fgDim).Italic(true)
 	s.WriteString(footerStyle.Render("  Press 'q', 'Esc', or 'Ctrl+C' to return to the main view  "))
 	s.WriteString("\n")
 
 	return s.String()
+}
+
+// renderHelpView renders the help screen using viewport
+func (m Model) renderHelpView() string {
+	return m.viewport.View()
 }
 
 // renderBannerView renders the startup banner screen
@@ -345,4 +368,50 @@ func truncateTodoTitle(title string, maxLength int) string {
 		return title
 	}
 	return string(runes[:maxLength]) + "..."
+}
+
+// renderAddTodoView renders the add todo screen
+func (m Model) renderAddTodoView() string {
+	var s strings.Builder
+
+	// Title with dark background
+	s.WriteString(titleStyle.Render(" ➕ Add New Todo "))
+	s.WriteString("\n\n")
+
+	// Show current step
+	stepIndicator := ""
+	if m.addTodoStep == 0 {
+		stepIndicator = headerStyle.Render(" Step 1/2: Enter Title ")
+	} else {
+		stepIndicator = headerStyle.Render(" Step 2/2: Enter Description (Optional) ")
+	}
+	s.WriteString(stepIndicator)
+	s.WriteString("\n\n")
+
+	// Show previously entered title if on step 2
+	if m.addTodoStep == 1 {
+		s.WriteString(messageStyle.Render(fmt.Sprintf("Title: %s", m.addTodoTitle)))
+		s.WriteString("\n\n")
+	}
+
+	// Input field
+	s.WriteString(m.input.View())
+	s.WriteString("\n")
+
+	// Error message if any
+	if m.err != nil {
+		s.WriteString("\n")
+		s.WriteString(errorStyle.Render("Error: " + m.err.Error()))
+		s.WriteString("\n")
+	}
+
+	// Help text
+	s.WriteString("\n")
+	if m.addTodoStep == 0 {
+		s.WriteString(helpStyle.Render("Press Enter to continue | Esc to cancel"))
+	} else {
+		s.WriteString(helpStyle.Render("Press Enter to save | Esc to go back"))
+	}
+
+	return s.String()
 }

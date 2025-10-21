@@ -120,7 +120,7 @@ var (
 
 	// headerStyle is the style for table headers (transparent background)
 	headerStyle = lipgloss.NewStyle().
-		Foreground(fgHeader).
+		Foreground(lipgloss.Color("213")).
 		Bold(true).
 		Underline(true)
 

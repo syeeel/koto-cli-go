@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/syeeel/koto-cli-go/internal/model"
 	"github.com/syeeel/koto-cli-go/internal/service"
@@ -17,6 +18,8 @@ const (
 	ViewModeList
 	// ViewModeHelp shows the help screen
 	ViewModeHelp
+	// ViewModeAddTodo shows the add todo screen
+	ViewModeAddTodo
 )
 
 // Model represents the Bubbletea model for the TUI
@@ -26,11 +29,17 @@ type Model struct {
 	cursor   int
 	viewMode ViewMode
 	input    textinput.Model
+	viewport viewport.Model
 	message  string
 	err      error
 	width    int
 	height   int
 	quitting bool
+
+	// Add todo screen state
+	addTodoTitle       string
+	addTodoDescription string
+	addTodoStep        int // 0: title, 1: description
 }
 
 // NewModel creates a new TUI model

@@ -1,7 +1,12 @@
 package tui
 
 import (
+	"context"
+	"errors"
+
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/syeeel/koto-cli-go/internal/model"
 )
 
 // Update handles messages and updates the model
@@ -12,6 +17,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		// Update viewport size if in help mode
+		if m.viewMode == ViewModeHelp {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height - 2
+		}
 		return m, nil
 
 	case tea.KeyMsg:
@@ -27,8 +37,59 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "q", "esc", "ctrl+c":
 				m.viewMode = ViewModeList
 				return m, nil
+			case "up", "k":
+				m.viewport.LineUp(1)
+				return m, nil
+			case "down", "j":
+				m.viewport.LineDown(1)
+				return m, nil
+			case "pgup", "b":
+				m.viewport.ViewUp()
+				return m, nil
+			case "pgdown", "f", " ":
+				m.viewport.ViewDown()
+				return m, nil
+			case "g":
+				m.viewport.GotoTop()
+				return m, nil
+			case "G":
+				m.viewport.GotoBottom()
+				return m, nil
 			}
 			return m, nil
+		}
+
+		// Handle add todo view
+		if m.viewMode == ViewModeAddTodo {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				return m, tea.Quit
+
+			case "esc":
+				// Cancel and return to list view, or go back to previous step
+				if m.addTodoStep == 0 {
+					// Cancel the whole operation
+					m.viewMode = ViewModeList
+					m.input.Placeholder = "Enter command (type /help for help)"
+					m.input.SetValue("")
+					m.message = "Add todo cancelled"
+				} else {
+					// Go back to previous step
+					m.addTodoStep = 0
+					m.input.Placeholder = "Enter todo title..."
+					m.input.SetValue(m.addTodoTitle)
+				}
+				return m, nil
+
+			case "enter":
+				return m.handleAddTodoEnter()
+			}
+
+			// Update input for add todo view
+			var cmd tea.Cmd
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
 		}
 
 		// Handle list view keys
@@ -61,6 +122,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "?":
 			m.viewMode = ViewModeHelp
+			// Initialize viewport for help view
+			m.viewport = viewport.New(m.width, m.height-2)
+			m.viewport.SetContent(m.renderHelpContent())
 			return m, nil
 		}
 
@@ -100,5 +164,60 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// Check if command is /add - switch to add todo view
+	if value == "/add" {
+		m.viewMode = ViewModeAddTodo
+		m.addTodoStep = 0
+		m.addTodoTitle = ""
+		m.addTodoDescription = ""
+		m.input.Placeholder = "Enter todo title..."
+		m.input.SetValue("")
+		return m, nil
+	}
+
 	return m, parseAndExecuteCommand(m.service, value)
+}
+
+// handleAddTodoEnter processes the enter key press in add todo view
+func (m *Model) handleAddTodoEnter() (tea.Model, tea.Cmd) {
+	value := m.input.Value()
+
+	switch m.addTodoStep {
+	case 0: // Title input
+		if value == "" {
+			m.err = errors.New("title cannot be empty")
+			return m, nil
+		}
+		// Save title and move to description step
+		m.addTodoTitle = value
+		m.addTodoStep = 1
+		m.input.SetValue("")
+		m.input.Placeholder = "Enter description (optional, press Enter to skip)..."
+		m.err = nil
+		return m, nil
+
+	case 1: // Description input
+		// Save description
+		m.addTodoDescription = value
+
+		// Create the todo
+		ctx := context.Background()
+		_, err := m.service.AddTodo(ctx, m.addTodoTitle, m.addTodoDescription, model.PriorityMedium, nil)
+		if err != nil {
+			m.err = err
+			return m, nil
+		}
+
+		// Reset and return to list view
+		m.viewMode = ViewModeList
+		m.input.Placeholder = "Enter command (type /help for help)"
+		m.input.SetValue("")
+		m.message = "Todo added successfully"
+		m.err = nil
+
+		// Reload todos
+		return m, loadTodos(m.service)
+	}
+
+	return m, nil
 }
