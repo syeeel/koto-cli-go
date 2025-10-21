@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/syeeel/koto-cli-go/internal/model"
@@ -54,8 +53,6 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
 
 		// Execute command
 		switch command {
-		case "/edit":
-			return handleEditCommand(ctx, svc, args)
 		case "/delete":
 			return handleDeleteCommand(ctx, svc, args)
 		case "/done":
@@ -84,81 +81,6 @@ func loadTodos(svc *service.TodoService) tea.Cmd {
 		todos, err := svc.ListTodos(context.Background())
 		return todosLoadedMsg{todos: todos, err: err}
 	}
-}
-
-// handleEditCommand handles the /edit command
-func handleEditCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
-	if len(args) < 2 {
-		return commandExecutedMsg{err: errors.New("usage: /edit <id> [--title=<title>] [--desc=<description>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]")}
-	}
-
-	// Parse ID
-	id, err := strconv.ParseInt(args[0], 10, 64)
-	if err != nil {
-		return commandExecutedMsg{err: errors.New("invalid todo ID")}
-	}
-
-	// Get current todo
-	todos, err := svc.ListTodos(ctx)
-	if err != nil {
-		return commandExecutedMsg{err: err}
-	}
-
-	var currentTodo *model.Todo
-	for _, t := range todos {
-		if t.ID == id {
-			currentTodo = t
-			break
-		}
-	}
-
-	if currentTodo == nil {
-		return commandExecutedMsg{err: fmt.Errorf("todo #%d not found", id)}
-	}
-
-	// Use current values as defaults
-	title := currentTodo.Title
-	description := currentTodo.Description
-	priority := currentTodo.Priority
-	dueDate := currentTodo.DueDate
-
-	// Parse update arguments
-	for _, arg := range args[1:] {
-		if strings.HasPrefix(arg, "--title=") {
-			title = strings.TrimPrefix(arg, "--title=")
-			title = strings.Trim(title, "\"'")
-		} else if strings.HasPrefix(arg, "--desc=") {
-			description = strings.TrimPrefix(arg, "--desc=")
-			description = strings.Trim(description, "\"'")
-		} else if strings.HasPrefix(arg, "--priority=") {
-			priorityStr := strings.TrimPrefix(arg, "--priority=")
-			switch strings.ToLower(priorityStr) {
-			case "low":
-				priority = model.PriorityLow
-			case "medium":
-				priority = model.PriorityMedium
-			case "high":
-				priority = model.PriorityHigh
-			default:
-				return commandExecutedMsg{err: errors.New("invalid priority (use: low, medium, high)")}
-			}
-		} else if strings.HasPrefix(arg, "--due=") {
-			dueDateStr := strings.TrimPrefix(arg, "--due=")
-			parsedDate, err := time.Parse("2006-01-02", dueDateStr)
-			if err != nil {
-				return commandExecutedMsg{err: fmt.Errorf("invalid due date format (use YYYY-MM-DD): %w", err)}
-			}
-			dueDate = &parsedDate
-		}
-	}
-
-	// Update the todo
-	err = svc.EditTodo(ctx, id, title, description, priority, dueDate)
-	if err != nil {
-		return commandExecutedMsg{err: err}
-	}
-
-	return commandExecutedMsg{message: fmt.Sprintf("Updated todo #%d", id)}
 }
 
 // handleDeleteCommand handles the /delete command

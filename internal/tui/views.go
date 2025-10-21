@@ -22,6 +22,8 @@ func (m Model) View() string {
 		return m.renderHelpView()
 	case ViewModeAddTodo:
 		return m.renderAddTodoView()
+	case ViewModeEditTodo:
+		return m.renderEditTodoView()
 	default:
 		return m.renderListView()
 	}
@@ -207,8 +209,9 @@ func (m Model) renderHelpContent() string {
 		{"", "", ""},
 		{"/done <id>", "Mark todo as completed", "/done 1"},
 		{"/delete <id>", "Delete a todo", "/delete 2"},
-		{"/edit <id> --title=<new title>", "Edit todo title", "/edit 1 --title=\"New title\""},
-		{"/edit <id> --priority=<low|medium|high>", "Edit todo priority", "/edit 1 --priority=high"},
+		{"/edit <id>", "Edit a todo (interactive)", "/edit 1"},
+		{"", "  → Step 1: Edit title", ""},
+		{"", "  → Step 2: Edit description (optional)", ""},
 		{"", "", ""},
 		{"/export [filepath]", "Export todos to JSON", "/export ~/todos.json"},
 		{"/import <filepath>", "Import todos from JSON", "/import ~/todos.json"},
@@ -408,6 +411,52 @@ func (m Model) renderAddTodoView() string {
 	// Help text
 	s.WriteString("\n")
 	if m.addTodoStep == 0 {
+		s.WriteString(helpStyle.Render("Press Enter to continue | Esc to cancel"))
+	} else {
+		s.WriteString(helpStyle.Render("Press Enter to save | Esc to go back"))
+	}
+
+	return s.String()
+}
+
+// renderEditTodoView renders the edit todo screen
+func (m Model) renderEditTodoView() string {
+	var s strings.Builder
+
+	// Title with dark background
+	s.WriteString(titleStyle.Render(fmt.Sprintf(" ✏️  Edit Todo #%d ", m.editTodoID)))
+	s.WriteString("\n\n")
+
+	// Show current step
+	stepIndicator := ""
+	if m.editTodoStep == 0 {
+		stepIndicator = headerStyle.Render(" Step 1/2: Edit Title ")
+	} else {
+		stepIndicator = headerStyle.Render(" Step 2/2: Edit Description (Optional) ")
+	}
+	s.WriteString(stepIndicator)
+	s.WriteString("\n\n")
+
+	// Show previously entered title if on step 2
+	if m.editTodoStep == 1 {
+		s.WriteString(messageStyle.Render(fmt.Sprintf("Title: %s", m.editTodoTitle)))
+		s.WriteString("\n\n")
+	}
+
+	// Input field
+	s.WriteString(m.input.View())
+	s.WriteString("\n")
+
+	// Error message if any
+	if m.err != nil {
+		s.WriteString("\n")
+		s.WriteString(errorStyle.Render("Error: " + m.err.Error()))
+		s.WriteString("\n")
+	}
+
+	// Help text
+	s.WriteString("\n")
+	if m.editTodoStep == 0 {
 		s.WriteString(helpStyle.Render("Press Enter to continue | Esc to cancel"))
 	} else {
 		s.WriteString(helpStyle.Render("Press Enter to save | Esc to go back"))

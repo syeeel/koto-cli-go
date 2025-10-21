@@ -20,6 +20,8 @@ const (
 	ViewModeHelp
 	// ViewModeAddTodo shows the add todo screen
 	ViewModeAddTodo
+	// ViewModeEditTodo shows the edit todo screen
+	ViewModeEditTodo
 )
 
 // Model represents the Bubbletea model for the TUI
@@ -40,6 +42,12 @@ type Model struct {
 	addTodoTitle       string
 	addTodoDescription string
 	addTodoStep        int // 0: title, 1: description
+
+	// Edit todo screen state
+	editTodoID          int64
+	editTodoTitle       string
+	editTodoDescription string
+	editTodoStep        int // 0: title, 1: description
 }
 
 // NewModel creates a new TUI model

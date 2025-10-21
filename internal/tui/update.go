@@ -3,6 +3,8 @@ package tui
 import (
 	"context"
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -92,6 +94,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
+		// Handle edit todo view
+		if m.viewMode == ViewModeEditTodo {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				return m, tea.Quit
+
+			case "esc":
+				// Cancel and return to list view, or go back to previous step
+				if m.editTodoStep == 0 {
+					// Cancel the whole operation
+					m.viewMode = ViewModeList
+					m.input.Placeholder = "Enter command (type /help for help)"
+					m.input.SetValue("")
+					m.message = "Edit cancelled"
+				} else {
+					// Go back to previous step
+					m.editTodoStep = 0
+					m.input.Placeholder = "Edit todo title..."
+					m.input.SetValue(m.editTodoTitle)
+				}
+				return m, nil
+
+			case "enter":
+				return m.handleEditTodoEnter()
+			}
+
+			// Update input for edit todo view
+			var cmd tea.Cmd
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
+		}
+
 		// Handle list view keys
 		switch msg.String() {
 		case "ctrl+c":
@@ -175,6 +210,43 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// Check if command is /edit <id> - switch to edit todo view
+	if strings.HasPrefix(value, "/edit ") {
+		parts := strings.Fields(value)
+		if len(parts) == 2 {
+			id, err := strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				m.err = errors.New("invalid todo ID")
+				return m, nil
+			}
+
+			// Find the todo with the given ID
+			var targetTodo *model.Todo
+			for _, todo := range m.todos {
+				if todo.ID == id {
+					targetTodo = todo
+					break
+				}
+			}
+
+			if targetTodo == nil {
+				m.err = errors.New("todo not found")
+				return m, nil
+			}
+
+			// Switch to edit mode with existing data
+			m.viewMode = ViewModeEditTodo
+			m.editTodoID = id
+			m.editTodoTitle = targetTodo.Title
+			m.editTodoDescription = targetTodo.Description
+			m.editTodoStep = 0
+			m.input.Placeholder = "Edit todo title..."
+			m.input.SetValue(targetTodo.Title)
+			m.err = nil
+			return m, nil
+		}
+	}
+
 	return m, parseAndExecuteCommand(m.service, value)
 }
 
@@ -213,6 +285,50 @@ func (m *Model) handleAddTodoEnter() (tea.Model, tea.Cmd) {
 		m.input.Placeholder = "Enter command (type /help for help)"
 		m.input.SetValue("")
 		m.message = "Todo added successfully"
+		m.err = nil
+
+		// Reload todos
+		return m, loadTodos(m.service)
+	}
+
+	return m, nil
+}
+
+// handleEditTodoEnter processes the enter key press in edit todo view
+func (m *Model) handleEditTodoEnter() (tea.Model, tea.Cmd) {
+	value := m.input.Value()
+
+	switch m.editTodoStep {
+	case 0: // Title input
+		if value == "" {
+			m.err = errors.New("title cannot be empty")
+			return m, nil
+		}
+		// Save title and move to description step
+		m.editTodoTitle = value
+		m.editTodoStep = 1
+		m.input.SetValue(m.editTodoDescription)
+		m.input.Placeholder = "Edit description (optional, press Enter to save)..."
+		m.err = nil
+		return m, nil
+
+	case 1: // Description input
+		// Save description
+		m.editTodoDescription = value
+
+		// Update the todo
+		ctx := context.Background()
+		err := m.service.EditTodo(ctx, m.editTodoID, m.editTodoTitle, m.editTodoDescription, model.PriorityMedium, nil)
+		if err != nil {
+			m.err = err
+			return m, nil
+		}
+
+		// Reset and return to list view
+		m.viewMode = ViewModeList
+		m.input.Placeholder = "Enter command (type /help for help)"
+		m.input.SetValue("")
+		m.message = "Todo updated successfully"
 		m.err = nil
 
 		// Reload todos
