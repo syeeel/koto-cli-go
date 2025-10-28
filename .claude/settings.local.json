@@ -19,7 +19,11 @@
       "Bash(go get:*)",
       "Bash(go mod tidy:*)",
       "Bash(go list:*)",
-      "Bash(go vet:*)"
+      "Bash(go vet:*)",
+      "Bash(go env:*)",
+      "Bash(curl:*)",
+      "Bash(ping:*)",
+      "Read(//etc/**)"
     ],
     "deny": [],
     "ask": []

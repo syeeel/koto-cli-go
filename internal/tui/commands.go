@@ -9,6 +9,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/gen2brain/beeep"
 	"github.com/syeeel/koto-cli-go/internal/model"
 	"github.com/syeeel/koto-cli-go/internal/service"
 )
@@ -222,6 +223,11 @@ func completePomodoroWithRecording(svc *service.TodoService, todoID int64) tea.C
 				}
 			}
 		}
+
+		// Play beep sound (440Hz, 200ms)
+		// Ignore errors - beep failure should not break the app
+		_ = beeep.Beep(beeep.DefaultFreq, beeep.DefaultDuration)
+
 		return pomodoroCompleteMsg{todoID: todoID}
 	}
 }
