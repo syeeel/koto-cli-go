@@ -15,14 +15,14 @@ func main() {
 	// Get configuration
 	cfg, err := config.GetDefaultConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to get configuration: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Error: failed to get configuration: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Initialize database
 	repo, err := repository.NewSQLiteRepository(cfg.DBPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to initialize database: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Error: failed to initialize database: %v\n", err)
 		os.Exit(1)
 	}
 	defer repo.Close()
@@ -36,7 +36,7 @@ func main() {
 	// Start the application
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }

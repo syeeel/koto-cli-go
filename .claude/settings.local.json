@@ -18,7 +18,8 @@
       "Bash(go test:*)",
       "Bash(go get:*)",
       "Bash(go mod tidy:*)",
-      "Bash(go list:*)"
+      "Bash(go list:*)",
+      "Bash(go vet:*)"
     ],
     "deny": [],
     "ask": []

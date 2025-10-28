@@ -18,10 +18,10 @@ func main() {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, Go Developer! 🚀\n")
+	_, _ = fmt.Fprintf(w, "Hello, Go Developer! 🚀\n")
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "OK")
+	_, _ = fmt.Fprintf(w, "OK")
 }
