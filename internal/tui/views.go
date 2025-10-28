@@ -483,31 +483,28 @@ func (m Model) renderEditTodoView() string {
 func (m Model) renderPomodoroView() string {
 	var s strings.Builder
 
-	// Title with dark background
+	// Title with tomato emoji
 	s.WriteString(titleStyle.Render(" 🍅 Pomodoro Timer "))
 	s.WriteString("\n\n")
 
-	// Timer display - large and centered
+	// Calculate progress
+	totalSeconds := 1500 // 25 minutes
+	elapsedSeconds := totalSeconds - m.pomoSecondsLeft
+	progressPercent := float64(elapsedSeconds) / float64(totalSeconds)
+
+	// Timer display - large numbers with gradient
 	minutes := m.pomoSecondsLeft / 60
 	seconds := m.pomoSecondsLeft % 60
-	timerText := fmt.Sprintf("%02d:%02d", minutes, seconds)
 
-	// Make the timer text large by adding spacing
-	largeTimerText := ""
-	for _, char := range timerText {
-		largeTimerText += string(char) + " "
-	}
-	largeTimerDisplay := lipgloss.NewStyle().
-		Foreground(accentGreen).
-		Bold(true).
-		Align(lipgloss.Center).
-		Width(60).
-		MarginTop(3).
-		MarginBottom(3).
-		Render(largeTimerText)
+	// Render large timer numbers with pink gradient
+	largeTimer := m.renderLargeTimer(minutes, seconds)
+	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, largeTimer))
+	s.WriteString("\n\n")
 
-	s.WriteString(largeTimerDisplay)
-	s.WriteString("\n")
+	// Progress bar with pink gradient
+	progressView := m.renderPinkProgressBar(progressPercent)
+	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, progressView))
+	s.WriteString("\n\n")
 
 	// Show which todo is being worked on
 	if m.pomoTodoID > 0 {
@@ -521,25 +518,256 @@ func (m Model) renderPomodoroView() string {
 		}
 
 		if todoTitle != "" {
-			taskInfo := fmt.Sprintf("Working on: #%d - %s", m.pomoTodoID, todoTitle)
-			s.WriteString(messageStyle.Render(taskInfo))
+			taskInfoBox := lipgloss.NewStyle().
+				Border(lipgloss.NormalBorder()).
+				BorderForeground(lipgloss.Color("#585b70")).
+				Padding(1, 2).
+				Width(70).
+				Render(
+					lipgloss.NewStyle().
+						Foreground(lipgloss.Color("213")).
+						Bold(true).
+						Render(fmt.Sprintf("📋 Task #%d", m.pomoTodoID)) +
+						"\n" +
+						lipgloss.NewStyle().
+							Foreground(fgDefault).
+							Render(todoTitle),
+				)
+			s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, taskInfoBox))
 			s.WriteString("\n\n")
 		}
 	} else {
-		s.WriteString(helpStyle.Render("General Pomodoro session"))
+		infoBox := lipgloss.NewStyle().
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("#585b70")).
+			Padding(1, 2).
+			Width(70).
+			Align(lipgloss.Center).
+			Render(
+				lipgloss.NewStyle().
+					Foreground(fgDim).
+					Italic(true).
+					Render("General Pomodoro session"),
+			)
+		s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, infoBox))
 		s.WriteString("\n\n")
 	}
 
 	// Status indicator
+	statusText := ""
 	if m.pomoRunning {
-		s.WriteString(messageStyle.Render("⏱️  Timer is running..."))
+		statusText = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("213")).
+			Bold(true).
+			Render("⏱️  Timer is running...")
 	} else {
-		s.WriteString(helpStyle.Render("Timer paused"))
+		statusText = lipgloss.NewStyle().
+			Foreground(fgDim).
+			Render("Timer paused")
 	}
+	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, statusText))
 	s.WriteString("\n\n")
 
-	// Help text
-	s.WriteString(helpStyle.Render("Press Esc or Enter to stop timer"))
+	// Help text in a subtle box
+	helpBox := lipgloss.NewStyle().
+		Foreground(fgDim).
+		Italic(true).
+		Render("Press Esc or Enter to stop timer")
+	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, helpBox))
 
 	return s.String()
+}
+
+// renderLargeTimer renders large timer numbers with pink gradient
+func (m Model) renderLargeTimer(minutes, seconds int) string {
+	// ASCII art style large numbers (simplified)
+	minutesStr := fmt.Sprintf("%02d", minutes)
+	secondsStr := fmt.Sprintf("%02d", seconds)
+
+	// Create gradient using banner pink color (213) and variations
+	pink1 := lipgloss.Color("213") // Banner pink (base)
+	pink2 := lipgloss.Color("212") // Slightly lighter
+	pink3 := lipgloss.Color("205") // Brighter variant
+
+	// Render each digit with spacing and gradient
+	var lines [5]string
+	digits := minutesStr + ":" + secondsStr
+
+	for i, char := range digits {
+		var color lipgloss.Color
+		if i < 2 {
+			color = pink1
+		} else if i == 2 {
+			color = pink2
+		} else {
+			color = pink3
+		}
+
+		digitArt := getDigitArt(char)
+		for lineIdx, line := range digitArt {
+			styledLine := lipgloss.NewStyle().
+				Foreground(color).
+				Bold(true).
+				Render(line)
+			if i > 0 {
+				lines[lineIdx] += "  " // Spacing between digits
+			}
+			lines[lineIdx] += styledLine
+		}
+	}
+
+	// Join all lines
+	var result strings.Builder
+	for _, line := range lines {
+		result.WriteString(line)
+		result.WriteString("\n")
+	}
+
+	return result.String()
+}
+
+// renderPinkProgressBar renders a beautiful pink gradient progress bar
+func (m Model) renderPinkProgressBar(percent float64) string {
+	width := 60
+	filled := int(percent * float64(width))
+
+	// Pink gradient colors using 256-color palette (darker, more vibrant)
+	pinkColors := []lipgloss.Color{
+		lipgloss.Color("218"), // Light magenta
+		lipgloss.Color("212"), // Pink
+		lipgloss.Color("213"), // Banner pink
+		lipgloss.Color("205"), // Hot pink
+		lipgloss.Color("206"), // Bright pink
+		lipgloss.Color("199"), // Deep pink
+		lipgloss.Color("198"), // Magenta
+		lipgloss.Color("197"), // Deep magenta
+	}
+
+	var bar strings.Builder
+
+	// Filled portion with gradient
+	for i := 0; i < filled; i++ {
+		// Calculate which color to use based on position
+		colorIndex := (i * len(pinkColors)) / width
+		if colorIndex >= len(pinkColors) {
+			colorIndex = len(pinkColors) - 1
+		}
+
+		styled := lipgloss.NewStyle().
+			Foreground(pinkColors[colorIndex]).
+			Render("█")
+		bar.WriteString(styled)
+	}
+
+	// Empty portion
+	emptyStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#313244"))
+	for i := filled; i < width; i++ {
+		bar.WriteString(emptyStyle.Render("░"))
+	}
+
+	// Add percentage text
+	percentText := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render(fmt.Sprintf(" %3.0f%%", percent*100))
+	bar.WriteString(percentText)
+
+	return bar.String()
+}
+
+// getDigitArt returns ASCII art for a single digit or colon
+func getDigitArt(char rune) [5]string {
+	switch char {
+	case '0':
+		return [5]string{
+			"█████",
+			"█   █",
+			"█   █",
+			"█   █",
+			"█████",
+		}
+	case '1':
+		return [5]string{
+			"  ██ ",
+			" ███ ",
+			"  ██ ",
+			"  ██ ",
+			"█████",
+		}
+	case '2':
+		return [5]string{
+			"█████",
+			"    █",
+			"█████",
+			"█    ",
+			"█████",
+		}
+	case '3':
+		return [5]string{
+			"█████",
+			"    █",
+			"█████",
+			"    █",
+			"█████",
+		}
+	case '4':
+		return [5]string{
+			"█   █",
+			"█   █",
+			"█████",
+			"    █",
+			"    █",
+		}
+	case '5':
+		return [5]string{
+			"█████",
+			"█    ",
+			"█████",
+			"    █",
+			"█████",
+		}
+	case '6':
+		return [5]string{
+			"█████",
+			"█    ",
+			"█████",
+			"█   █",
+			"█████",
+		}
+	case '7':
+		return [5]string{
+			"█████",
+			"    █",
+			"   ██",
+			"  ██ ",
+			" ██  ",
+		}
+	case '8':
+		return [5]string{
+			"█████",
+			"█   █",
+			"█████",
+			"█   █",
+			"█████",
+		}
+	case '9':
+		return [5]string{
+			"█████",
+			"█   █",
+			"█████",
+			"    █",
+			"█████",
+		}
+	case ':':
+		return [5]string{
+			"     ",
+			" ██  ",
+			"     ",
+			" ██  ",
+			"     ",
+		}
+	default:
+		return [5]string{"", "", "", "", ""}
+	}
 }
