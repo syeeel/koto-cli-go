@@ -632,35 +632,48 @@ func (m Model) renderLargeTimer(minutes, seconds int) string {
 	return result.String()
 }
 
-// renderPinkProgressBar renders a beautiful pink gradient progress bar
+// interpolateColor interpolates between two RGB colors
+func interpolateColor(startR, startG, startB, endR, endG, endB int, ratio float64) string {
+	r := int(float64(startR) + (float64(endR)-float64(startR))*ratio)
+	g := int(float64(startG) + (float64(endG)-float64(startG))*ratio)
+	b := int(float64(startB) + (float64(endB)-float64(startB))*ratio)
+	return fmt.Sprintf("#%02x%02x%02x", r, g, b)
+}
+
+// renderPinkProgressBar renders a beautiful progress bar with smooth 3-color gradient (pink→blue→green)
 func (m Model) renderPinkProgressBar(percent float64) string {
 	width := 60
 	filled := int(percent * float64(width))
 
-	// Pink gradient colors using 256-color palette (darker, more vibrant)
-	pinkColors := []lipgloss.Color{
-		lipgloss.Color("218"), // Light magenta
-		lipgloss.Color("212"), // Pink
-		lipgloss.Color("213"), // Banner pink
-		lipgloss.Color("205"), // Hot pink
-		lipgloss.Color("206"), // Bright pink
-		lipgloss.Color("199"), // Deep pink
-		lipgloss.Color("198"), // Magenta
-		lipgloss.Color("197"), // Deep magenta
-	}
+	// Three-color gradient: Pink → Blue → Green
+	// Start: Light pink (#ff69b4)
+	pinkR, pinkG, pinkB := 255, 105, 180
+	// Middle: Royal blue (#4169e1)
+	blueR, blueG, blueB := 65, 105, 225
+	// End: Primary green (#06c775)
+	greenR, greenG, greenB := 6, 199, 117
 
 	var bar strings.Builder
 
-	// Filled portion with gradient
+	// Filled portion with smooth 3-color gradient
 	for i := 0; i < filled; i++ {
-		// Calculate which color to use based on position
-		colorIndex := (i * len(pinkColors)) / width
-		if colorIndex >= len(pinkColors) {
-			colorIndex = len(pinkColors) - 1
+		var color string
+
+		// Calculate position ratio (0.0 to 1.0)
+		positionRatio := float64(i) / float64(width-1)
+
+		if positionRatio <= 0.5 {
+			// First half: Pink → Blue
+			segmentRatio := positionRatio / 0.5 // 0.0 to 1.0 within this segment
+			color = interpolateColor(pinkR, pinkG, pinkB, blueR, blueG, blueB, segmentRatio)
+		} else {
+			// Second half: Blue → Green
+			segmentRatio := (positionRatio - 0.5) / 0.5 // 0.0 to 1.0 within this segment
+			color = interpolateColor(blueR, blueG, blueB, greenR, greenG, greenB, segmentRatio)
 		}
 
 		styled := lipgloss.NewStyle().
-			Foreground(pinkColors[colorIndex]).
+			Foreground(lipgloss.Color(color)).
 			Render("█")
 		bar.WriteString(styled)
 	}
@@ -672,9 +685,9 @@ func (m Model) renderPinkProgressBar(percent float64) string {
 		bar.WriteString(emptyStyle.Render("░"))
 	}
 
-	// Add percentage text
+	// Add percentage text in primary green
 	percentText := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("213")).
+		Foreground(lipgloss.Color("#06c775")).
 		Bold(true).
 		Render(fmt.Sprintf(" %3.0f%%", percent*100))
 	bar.WriteString(percentText)
