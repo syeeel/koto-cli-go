@@ -31,6 +31,9 @@ type todosLoadedMsg struct {
 // pomodoroTickMsg is sent every second when the timer is running
 type pomodoroTickMsg struct{}
 
+// pomodoroAlertTickMsg is sent periodically when timer is completed and alarm is active
+type pomodoroAlertTickMsg struct{}
+
 // pomodoroCompleteMsg is sent when the timer reaches zero
 type pomodoroCompleteMsg struct {
 	todoID int64 // ID of todo that was worked on (0 if general timer)
@@ -207,6 +210,13 @@ func handleImportCommand(ctx context.Context, svc *service.TodoService, args []s
 func tickPomodoro() tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
 		return pomodoroTickMsg{}
+	})
+}
+
+// tickPomodoroAlert creates a command that waits 2 seconds and sends an alert tick message
+func tickPomodoroAlert() tea.Cmd {
+	return tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+		return pomodoroAlertTickMsg{}
 	})
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/gen2brain/beeep"
 	"github.com/syeeel/koto-cli-go/internal/model"
 )
 
@@ -136,6 +137,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 
 			case "esc", "enter":
+				// If timer is completed and alarm is ringing, stop it
+				if m.pomoCompleted {
+					m.viewMode = ViewModeList
+					m.pomoCompleted = false
+					if m.pomoTodoID > 0 {
+						m.message = fmt.Sprintf("Pomodoro completed! 25 minutes recorded for todo #%d", m.pomoTodoID)
+					} else {
+						m.message = "Pomodoro completed!"
+					}
+					return m, loadTodos(m.service)
+				}
+
+				// Otherwise, handle early cancellation/stop
 				// Calculate elapsed time
 				elapsedSeconds := 1500 - m.pomoSecondsLeft
 				elapsedMinutes := elapsedSeconds / 60
@@ -227,8 +241,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Check if timer completed
 			if m.pomoSecondsLeft <= 0 {
 				m.pomoRunning = false
-				// Record work duration and complete timer
-				return m, completePomodoroWithRecording(m.service, m.pomoTodoID)
+				m.pomoCompleted = true
+				// Record work duration, play beep, and start alert ticking
+				return m, tea.Batch(
+					completePomodoroWithRecording(m.service, m.pomoTodoID),
+					tickPomodoroAlert(),
+				)
 			}
 
 			// Continue ticking
@@ -237,15 +255,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case pomodoroCompleteMsg:
-		// Timer completed - return to list view with success message
-		m.viewMode = ViewModeList
-		if msg.todoID > 0 {
-			m.message = fmt.Sprintf("Pomodoro completed! 25 minutes recorded for todo #%d", msg.todoID)
-		} else {
-			m.message = "Pomodoro completed!"
-		}
+		// Timer completed - stay in Pomodoro view with alarm
 		// Reload todos to show updated work duration
 		return m, loadTodos(m.service)
+
+	case pomodoroAlertTickMsg:
+		// Only process alert ticks if timer is completed and in Pomodoro view
+		if m.pomoCompleted && m.viewMode == ViewModePomodoro {
+			// Play beep sound (ignore errors)
+			_ = beeep.Beep(beeep.DefaultFreq, beeep.DefaultDuration)
+			// Continue alert ticking
+			return m, tickPomodoroAlert()
+		}
+		return m, nil
 	}
 
 	// Update the text input
@@ -349,7 +371,7 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 		// Switch to Pomodoro mode
 		m.viewMode = ViewModePomodoro
 		m.pomoTodoID = todoID
-		m.pomoSecondsLeft = 1500 // 25 minutes = 1500 seconds
+		m.pomoSecondsLeft = 10 // 25 minutes = 1500 seconds
 		m.pomoRunning = true
 		m.err = nil
 

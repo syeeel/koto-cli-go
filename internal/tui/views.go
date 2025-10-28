@@ -555,7 +555,13 @@ func (m Model) renderPomodoroView() string {
 
 	// Status indicator
 	statusText := ""
-	if m.pomoRunning {
+	if m.pomoCompleted {
+		// Timer completed - show alarm message
+		statusText = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")).
+			Bold(true).
+			Render("🔔 Timer Complete! Press Enter or Esc to stop alarm")
+	} else if m.pomoRunning {
 		statusText = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("213")).
 			Bold(true).

@@ -55,6 +55,7 @@ type Model struct {
 	pomoTodoID      int64 // ID of todo being worked on (0 if general timer)
 	pomoSecondsLeft int   // Remaining time in seconds (25 minutes = 1500 seconds)
 	pomoRunning     bool  // Whether timer is currently running
+	pomoCompleted   bool  // Whether timer has completed and is in alert mode
 }
 
 // NewModel creates a new TUI model
