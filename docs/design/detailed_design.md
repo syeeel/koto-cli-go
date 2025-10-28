@@ -100,14 +100,15 @@ const (
 )
 
 type Todo struct {
-    ID          int64      `db:"id"`
-    Title       string     `db:"title"`
-    Description string     `db:"description"`
-    Status      TodoStatus `db:"status"`
-    Priority    Priority   `db:"priority"`
-    DueDate     *time.Time `db:"due_date"`
-    CreatedAt   time.Time  `db:"created_at"`
-    UpdatedAt   time.Time  `db:"updated_at"`
+    ID           int64      `db:"id"`
+    Title        string     `db:"title"`
+    Description  string     `db:"description"`
+    Status       TodoStatus `db:"status"`
+    Priority     Priority   `db:"priority"`
+    DueDate      *time.Time `db:"due_date"`
+    WorkDuration int        `db:"work_duration"` // 累積作業時間（分）
+    CreatedAt    time.Time  `db:"created_at"`
+    UpdatedAt    time.Time  `db:"updated_at"`
 }
 
 func (t Todo) IsCompleted() bool {
@@ -136,6 +137,7 @@ CREATE TABLE IF NOT EXISTS todos (
     status INTEGER NOT NULL DEFAULT 0,
     priority INTEGER NOT NULL DEFAULT 0,
     due_date DATETIME,
+    work_duration INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -178,6 +180,9 @@ type TodoRepository interface {
 
     // MarkAsCompleted marks a todo as completed
     MarkAsCompleted(ctx context.Context, id int64) error
+
+    // AddWorkDuration adds work duration (in minutes) to a todo
+    AddWorkDuration(ctx context.Context, id int64, minutes int) error
 
     // Close closes the repository connection
     Close() error
@@ -368,6 +373,20 @@ func (s *TodoService) ImportFromJSON(ctx context.Context, filepath string) error
 
     return nil
 }
+
+func (s *TodoService) AddWorkDuration(ctx context.Context, id int64, minutes int) error {
+    // ToDoが存在するか確認
+    todo, err := s.repo.GetByID(ctx, id)
+    if err != nil {
+        return err
+    }
+    if todo == nil {
+        return ErrTodoNotFound
+    }
+
+    // 作業時間を追加
+    return s.repo.AddWorkDuration(ctx, id, minutes)
+}
 ```
 
 ## 6. TUI層詳細設計
@@ -392,19 +411,23 @@ const (
     ViewModeEdit
     ViewModeDelete
     ViewModeHelp
+    ViewModePomodoro
 )
 
 type Model struct {
-    service      *service.TodoService
-    todos        []*model.Todo
-    cursor       int
-    viewMode     ViewMode
-    input        textinput.Model
-    message      string
-    err          error
-    width        int
-    height       int
-    selectedID   int64
+    service         *service.TodoService
+    todos           []*model.Todo
+    cursor          int
+    viewMode        ViewMode
+    input           textinput.Model
+    message         string
+    err             error
+    width           int
+    height          int
+    selectedID      int64
+    pomodoroTodoID  *int64        // ポモドーロタイマーに紐づくToDo ID (nilの場合は紐づけなし)
+    pomodoroStarted time.Time     // ポモドーロ開始時刻
+    pomodoroDuration time.Duration // ポモドーロの長さ（デフォルト25分）
 }
 
 func NewModel(service *service.TodoService) Model {
@@ -499,6 +522,8 @@ func (m Model) View() string {
         return m.renderDeleteView()
     case ViewModeHelp:
         return m.renderHelpView()
+    case ViewModePomodoro:
+        return m.renderPomodoroView()
     default:
         return m.renderListView()
     }
@@ -562,6 +587,49 @@ func (m Model) renderListView() string {
 
     return s
 }
+
+func (m Model) renderPomodoroView() string {
+    var s string
+
+    // タイマーの残り時間を計算
+    elapsed := time.Since(m.pomodoroStarted)
+    remaining := m.pomodoroDuration - elapsed
+
+    if remaining < 0 {
+        remaining = 0
+    }
+
+    minutes := int(remaining.Minutes())
+    seconds := int(remaining.Seconds()) % 60
+
+    s += pomodoroTitleStyle.Render("🍅 ポモドーロタイマー") + "\n\n"
+
+    // タイマー表示（大きく表示）
+    timerText := fmt.Sprintf("%02d:%02d", minutes, seconds)
+    s += pomodoroTimerStyle.Render(timerText) + "\n\n"
+
+    // 紐づくToDoがある場合、タイトルを表示
+    if m.pomodoroTodoID != nil {
+        for _, todo := range m.todos {
+            if todo.ID == *m.pomodoroTodoID {
+                s += pomodoroTaskStyle.Render(fmt.Sprintf("作業中: %s", todo.Title)) + "\n\n"
+                break
+            }
+        }
+    } else {
+        s += pomodoroTaskStyle.Render("フリータイマーモード") + "\n\n"
+    }
+
+    // タイマー終了時
+    if remaining == 0 {
+        s += pomodoroCompleteStyle.Render("🎉 ポモドーロ完了！") + "\n"
+        s += "Enterキーを押してメイン画面に戻る\n"
+    } else {
+        s += helpStyle.Render("Escキーでキャンセル")
+    }
+
+    return s
+}
 ```
 
 ### 6.4 コマンドパーサー
@@ -618,6 +686,8 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
             return handleExportCommand(ctx, svc, args)
         case "/import":
             return handleImportCommand(ctx, svc, args)
+        case "/pomo":
+            return handlePomodoroCommand(ctx, svc, args)
         case "/help":
             return commandExecutedMsg{message: getHelpText()}
         case "/quit":
@@ -672,6 +742,25 @@ var (
     selectedStyle = lipgloss.NewStyle().
         Foreground(lipgloss.Color("212")).
         Bold(true)
+
+    pomodoroTitleStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("196")).
+        MarginBottom(1)
+
+    pomodoroTimerStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("226")).
+        FontSize(48).  // 大きなフォント（TUIでは擬似的に表現）
+        Align(lipgloss.Center)
+
+    pomodoroTaskStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("42")).
+        Italic(true)
+
+    pomodoroCompleteStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("46"))
 )
 ```
 
@@ -846,7 +935,40 @@ var (
 - IDが重複する場合の処理（上書き or スキップ）をユーザーに確認
 - 大量データのインポート時の進捗表示
 
-### 7.9 /quit - アプリ終了
+### 7.9 /pomo - ポモドーロタイマー
+
+**構文:**
+```
+/pomo [ToDo ID]
+```
+
+**例:**
+```
+/pomo              # フリータイマーモード（25分）
+/pomo 1            # ID 1のToDoに紐づけて25分タイマー開始
+```
+
+**処理フロー:**
+1. 引数チェック（ToDo IDが指定されている場合、存在確認）
+2. ポモドーロモードに遷移
+3. タイマー開始（25分 = 1500秒）
+4. 1秒ごとに画面を更新（tea.Tick使用）
+5. タイマー終了時
+   - アラーム表示
+   - ToDo IDが指定されている場合、作業時間を記録（25分追加）
+   - Enterキー待ち
+6. Enterキーでメイン画面に戻る
+
+**キャンセル:**
+- Escキーでタイマーをキャンセルし、メイン画面に戻る
+- キャンセル時は作業時間を記録しない
+
+**注意事項:**
+- タイマー実行中は専用画面が表示される
+- バックグラウンドでの実行はサポートしない
+- タイマー完了時のみ作業時間を記録
+
+### 7.10 /quit - アプリ終了
 
 **構文:**
 ```

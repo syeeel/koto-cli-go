@@ -14,7 +14,8 @@
       "Bash(go test ./internal/tui/...)",
       "Bash(go test ./...)",
       "Bash(go get github.com/mattn/go-runewidth)",
-      "Bash(go test ./internal/tui/... -v)"
+      "Bash(go test ./internal/tui/... -v)",
+      "Bash(go test:*)"
     ],
     "deny": [],
     "ask": []

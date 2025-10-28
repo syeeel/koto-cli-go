@@ -83,6 +83,16 @@ func (m *mockRepository) MarkAsCompleted(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (m *mockRepository) AddWorkDuration(ctx context.Context, id int64, minutes int) error {
+	todo, exists := m.todos[id]
+	if !exists {
+		return repository.ErrTodoNotFound
+	}
+	todo.WorkDuration += minutes
+	todo.UpdatedAt = time.Now()
+	return nil
+}
+
 func (m *mockRepository) Close() error {
 	return nil
 }
@@ -423,5 +433,79 @@ func TestTodoService_ImportFromJSON_InvalidJSON(t *testing.T) {
 	err := svc.ImportFromJSON(ctx, invalidPath)
 	if err != ErrInvalidJSON {
 		t.Errorf("expected ErrInvalidJSON, got %v", err)
+	}
+}
+
+func TestTodoService_AddWorkDuration(t *testing.T) {
+	repo := newMockRepository()
+	svc := NewTodoService(repo)
+	ctx := context.Background()
+
+	// Create a todo
+	todo, err := svc.AddTodo(ctx, "Test Todo", "Description", model.PriorityMedium, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo: %v", err)
+	}
+
+	// Add 25 minutes of work
+	err = svc.AddWorkDuration(ctx, todo.ID, 25)
+	if err != nil {
+		t.Fatalf("failed to add work duration: %v", err)
+	}
+
+	// Verify work duration was added
+	updated, err := repo.GetByID(ctx, todo.ID)
+	if err != nil {
+		t.Fatalf("failed to get updated todo: %v", err)
+	}
+
+	if updated.WorkDuration != 25 {
+		t.Errorf("expected work duration 25, got %d", updated.WorkDuration)
+	}
+
+	// Add another 25 minutes
+	err = svc.AddWorkDuration(ctx, todo.ID, 25)
+	if err != nil {
+		t.Fatalf("failed to add work duration second time: %v", err)
+	}
+
+	// Verify cumulative work duration
+	updated, err = repo.GetByID(ctx, todo.ID)
+	if err != nil {
+		t.Fatalf("failed to get updated todo after second addition: %v", err)
+	}
+
+	if updated.WorkDuration != 50 {
+		t.Errorf("expected cumulative work duration 50, got %d", updated.WorkDuration)
+	}
+}
+
+func TestTodoService_AddWorkDuration_TodoNotFound(t *testing.T) {
+	repo := newMockRepository()
+	svc := NewTodoService(repo)
+	ctx := context.Background()
+
+	// Try to add work duration to non-existent todo
+	err := svc.AddWorkDuration(ctx, 9999, 25)
+	if err != ErrTodoNotFound {
+		t.Errorf("expected ErrTodoNotFound, got %v", err)
+	}
+}
+
+func TestTodoService_AddWorkDuration_NegativeMinutes(t *testing.T) {
+	repo := newMockRepository()
+	svc := NewTodoService(repo)
+	ctx := context.Background()
+
+	// Create a todo
+	todo, err := svc.AddTodo(ctx, "Test Todo", "Description", model.PriorityMedium, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo: %v", err)
+	}
+
+	// Try to add negative minutes
+	err = svc.AddWorkDuration(ctx, todo.ID, -10)
+	if err != ErrInvalidWorkDuration {
+		t.Errorf("expected ErrInvalidWorkDuration, got %v", err)
 	}
 }

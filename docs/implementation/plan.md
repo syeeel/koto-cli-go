@@ -20,9 +20,10 @@
 | Phase 2 | MVP実装 | 基本的なTUIと主要コマンド | 6-8時間 |
 | Phase 2.5 | 起動バナー表示 | アスキーアートバナーとスプラッシュ画面 | 1-2時間 |
 | Phase 3 | 機能拡張 | エクスポート/インポート、UI改善 | 4-6時間 |
+| Phase 3.5 | ポモドーロ機能実装 | タイマー機能と作業時間記録 | 4-6時間 |
 | Phase 4 | 品質向上 | テスト、ドキュメント、リリース準備 | 4-6時間 |
 
-**総推定時間**: 20-30時間（2.5-4日相当）
+**総推定時間**: 24-36時間（3-4.5日相当）
 
 
 ---
@@ -334,6 +335,186 @@ go build ./cmd/koto
 
 ---
 
+## Phase 3.5: ポモドーロ機能実装
+
+### 目標
+ポモドーロテクニックを活用した作業時間記録機能を実装し、生産性向上をサポートする
+
+### 3.5.1 データモデル拡張 (1-1.5時間)
+
+#### タスク
+- [ ] `internal/model/todo.go` 更新
+  - [ ] `WorkDuration int` フィールド追加（累積作業時間、分単位）
+  - [ ] `GetWorkDurationFormatted() string` メソッド追加
+    - 例: `125` → `"2h 5m"`, `25` → `"25m"`
+  - [ ] 既存テストの更新
+
+- [ ] マイグレーションファイル作成
+  - [ ] `migrations/002_add_work_duration.sql` 作成
+    ```sql
+    ALTER TABLE todos ADD COLUMN work_duration INTEGER NOT NULL DEFAULT 0;
+    ```
+  - [ ] マイグレーション実行関数の実装（既存データベースへの対応）
+
+**ファイル**:
+- `internal/model/todo.go` (更新)
+- `internal/model/todo_test.go` (更新)
+- `migrations/002_add_work_duration.sql` (新規)
+
+---
+
+### 3.5.2 Repository層拡張 (1時間)
+
+#### タスク
+- [ ] `internal/repository/repository.go` 更新
+  - [ ] `AddWorkDuration(ctx context.Context, id int64, minutes int) error` メソッド追加
+
+- [ ] `internal/repository/sqlite.go` 更新
+  - [ ] `AddWorkDuration()` の実装
+    ```go
+    UPDATE todos SET work_duration = work_duration + ?, updated_at = ? WHERE id = ?
+    ```
+
+- [ ] テスト更新
+  - [ ] 既存テストのスキーマ更新（work_durationカラム対応）
+  - [ ] `AddWorkDuration()` のテスト追加
+
+**ファイル**:
+- `internal/repository/repository.go` (更新)
+- `internal/repository/sqlite.go` (更新)
+- `internal/repository/sqlite_test.go` (更新)
+
+---
+
+### 3.5.3 Service層拡張 (0.5-1時間)
+
+#### タスク
+- [ ] `internal/service/todo_service.go` 更新
+  - [ ] `AddWorkDuration(ctx context.Context, id int64, minutes int) error` メソッド追加
+  - [ ] バリデーション追加（作業時間が正の値か確認）
+  - [ ] エラーハンドリング（ToDoが存在しない場合）
+
+- [ ] テスト追加
+  - [ ] `AddWorkDuration()` のテスト
+  - [ ] バリデーションエラーのテスト
+
+**ファイル**:
+- `internal/service/todo_service.go` (更新)
+- `internal/service/todo_service_test.go` (更新)
+
+---
+
+### 3.5.4 TUI層実装 (2-3時間)
+
+#### タスク
+- [ ] `internal/tui/model.go` 更新
+  - [ ] `ViewModePomodoro` 定数追加
+  - [ ] ポモドーロ用フィールド追加
+    ```go
+    pomodoroTodoID   *int64        // nil = フリータイマー
+    pomodoroStarted  time.Time     // タイマー開始時刻
+    pomodoroDuration time.Duration // デフォルト25分
+    ```
+
+- [ ] `internal/tui/views.go` 更新
+  - [ ] `renderPomodoroView()` 実装
+    - タイマー表示（大きく見やすく）
+    - 残り時間の表示（MM:SS形式）
+    - 紐づくToDoのタイトル表示
+    - 完了メッセージ
+  - [ ] `renderListView()` 更新
+    - 作業時間の表示を追加（🍅 XXXm）
+
+- [ ] `internal/tui/styles.go` 更新
+  - [ ] ポモドーロ用スタイル定義
+    - `pomodoroTitleStyle` - タイトル
+    - `pomodoroTimerStyle` - タイマー表示（大きく、目立つ色）
+    - `pomodoroTaskStyle` - タスク名
+    - `pomodoroCompleteStyle` - 完了メッセージ
+
+- [ ] `internal/tui/update.go` 更新
+  - [ ] ポモドーロモード中のキー入力ハンドリング
+    - Esc: キャンセルしてメイン画面に戻る
+    - Enter: タイマー完了後、メイン画面に戻る
+  - [ ] 1秒ごとの画面更新（`tea.Tick` 使用）
+  - [ ] タイマー完了時の処理
+    - 作業時間を記録（Service層の`AddWorkDuration()`呼び出し）
+    - 完了メッセージ表示
+
+**ファイル**:
+- `internal/tui/model.go` (更新)
+- `internal/tui/views.go` (更新)
+- `internal/tui/styles.go` (更新)
+- `internal/tui/update.go` (更新)
+
+---
+
+### 3.5.5 コマンドハンドラー実装 (0.5-1時間)
+
+#### タスク
+- [ ] `internal/tui/commands.go` 更新
+  - [ ] `handlePomodoroCommand()` 実装
+    - 引数パース（オプションのToDo ID）
+    - ToDo IDの存在確認
+    - ポモドーロモードへの遷移
+    - タイマー開始のメッセージ送信
+  - [ ] `parseAndExecuteCommand()` に `/pomo` ケース追加
+
+**ファイル**:
+- `internal/tui/commands.go` (更新)
+
+**コマンド例**:
+```bash
+/pomo              # フリータイマーモード
+/pomo 1            # ID 1のToDoに紐づけて開始
+```
+
+---
+
+### 3.5.6 テストと動作確認 (0.5-1時間)
+
+#### タスク
+- [ ] ユニットテスト
+  - [ ] タイマーロジックのテスト
+  - [ ] 作業時間記録のテスト
+  - [ ] コマンドパースのテスト
+
+- [ ] 動作確認
+  - [ ] `/pomo` でフリータイマーが起動する
+  - [ ] `/pomo <ID>` でタスクに紐づくタイマーが起動する
+  - [ ] タイマーが正確にカウントダウンする
+  - [ ] タイマー完了後、作業時間が記録される（25分追加）
+  - [ ] Escキーでキャンセルできる
+  - [ ] キャンセル時は作業時間が記録されない
+  - [ ] リスト画面で作業時間が表示される
+
+**検証コマンド**:
+```bash
+# ビルド
+go build -o bin/koto ./cmd/koto
+
+# 実行
+./bin/koto
+
+# テスト
+/add テストタスク
+/pomo 1
+# 25分待つ or Escでキャンセル
+/list  # 作業時間が表示されることを確認
+```
+
+---
+
+### 3.5.7 今後の拡張可能性
+
+- カスタマイズ可能なタイマー時間（`/pomo 1 --duration=30`）
+- 休憩時間のタイマー（`/break` コマンド）
+- ポモドーロ回数の記録
+- 作業時間の統計表示
+- 作業時間の目標設定と進捗表示
+
+---
+
 ## Phase 4: 品質向上とリリース準備
 
 ### 目標
@@ -495,7 +676,8 @@ koto
 | M1: 開発環境準備完了 | Phase 0 完了 | Day 1 |
 | M2: データ層完成 | Phase 1 完了、テスト通過 | Day 1-2 |
 | M3: MVP完成 | Phase 2 完了、基本操作可能 | Day 2-3 |
-| M4: v1.0リリース | Phase 3, 4 完了 | Day 3-4 |
+| M3.5: ポモドーロ機能追加 | Phase 3.5 完了、タイマー動作確認 | Day 3-4 |
+| M4: v1.0リリース | Phase 3, 4 完了 | Day 4-5 |
 
 ---
 

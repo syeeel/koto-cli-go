@@ -29,6 +29,9 @@ type TodoRepository interface {
 	// MarkAsCompleted marks a todo as completed
 	MarkAsCompleted(ctx context.Context, id int64) error
 
+	// AddWorkDuration adds work duration (in minutes) to a todo
+	AddWorkDuration(ctx context.Context, id int64, minutes int) error
+
 	// Close closes the repository connection
 	Close() error
 }

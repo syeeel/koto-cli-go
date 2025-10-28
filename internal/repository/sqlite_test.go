@@ -299,3 +299,68 @@ func TestSQLiteRepository_MarkAsCompleted(t *testing.T) {
 		t.Errorf("expected status %d, got %d", model.StatusCompleted, completed.Status)
 	}
 }
+
+func TestSQLiteRepository_AddWorkDuration(t *testing.T) {
+	repo := setupTestDB(t)
+	defer repo.Close()
+
+	ctx := context.Background()
+	now := time.Now()
+
+	// Create a todo
+	todo := &model.Todo{
+		Title:        "Test Todo",
+		Description:  "Test Description",
+		Status:       model.StatusPending,
+		Priority:     model.PriorityMedium,
+		WorkDuration: 0, // Initially 0 minutes
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+	if err := repo.Create(ctx, todo); err != nil {
+		t.Fatalf("failed to create todo: %v", err)
+	}
+
+	// Add 25 minutes (one pomodoro)
+	if err := repo.AddWorkDuration(ctx, todo.ID, 25); err != nil {
+		t.Fatalf("failed to add work duration: %v", err)
+	}
+
+	// Verify work duration was added
+	updated, err := repo.GetByID(ctx, todo.ID)
+	if err != nil {
+		t.Fatalf("failed to get updated todo: %v", err)
+	}
+
+	if updated.WorkDuration != 25 {
+		t.Errorf("expected work duration %d, got %d", 25, updated.WorkDuration)
+	}
+
+	// Add another 25 minutes
+	if err := repo.AddWorkDuration(ctx, todo.ID, 25); err != nil {
+		t.Fatalf("failed to add work duration second time: %v", err)
+	}
+
+	// Verify work duration was cumulative
+	updated, err = repo.GetByID(ctx, todo.ID)
+	if err != nil {
+		t.Fatalf("failed to get updated todo after second addition: %v", err)
+	}
+
+	if updated.WorkDuration != 50 {
+		t.Errorf("expected cumulative work duration %d, got %d", 50, updated.WorkDuration)
+	}
+}
+
+func TestSQLiteRepository_AddWorkDuration_NotFound(t *testing.T) {
+	repo := setupTestDB(t)
+	defer repo.Close()
+
+	ctx := context.Background()
+
+	// Try to add work duration to non-existent todo
+	err := repo.AddWorkDuration(ctx, 9999, 25)
+	if err != ErrTodoNotFound {
+		t.Errorf("expected ErrTodoNotFound, got %v", err)
+	}
+}

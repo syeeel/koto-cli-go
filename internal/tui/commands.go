@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/syeeel/koto-cli-go/internal/model"
@@ -24,6 +25,14 @@ type commandExecutedMsg struct {
 type todosLoadedMsg struct {
 	todos []*model.Todo
 	err   error
+}
+
+// pomodoroTickMsg is sent every second when the timer is running
+type pomodoroTickMsg struct{}
+
+// pomodoroCompleteMsg is sent when the timer reaches zero
+type pomodoroCompleteMsg struct {
+	todoID int64 // ID of todo that was worked on (0 if general timer)
 }
 
 // parseAndExecuteCommand parses and executes a command
@@ -191,4 +200,44 @@ func handleImportCommand(ctx context.Context, svc *service.TodoService, args []s
 	}
 
 	return commandExecutedMsg{message: fmt.Sprintf("Imported todos from %s", filepath)}
+}
+
+// tickPomodoro creates a command that waits 1 second and sends a tick message
+func tickPomodoro() tea.Cmd {
+	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
+		return pomodoroTickMsg{}
+	})
+}
+
+// completePomodoroWithRecording handles timer completion and records work duration
+func completePomodoroWithRecording(svc *service.TodoService, todoID int64) tea.Cmd {
+	return func() tea.Msg {
+		// If this was a task-specific timer, record the work duration
+		if todoID > 0 {
+			ctx := context.Background()
+			err := svc.AddWorkDuration(ctx, todoID, 25) // 25 minutes
+			if err != nil {
+				return commandExecutedMsg{
+					err: fmt.Errorf("failed to record work duration: %w", err),
+				}
+			}
+		}
+		return pomodoroCompleteMsg{todoID: todoID}
+	}
+}
+
+// recordPartialPomodoro records partial work duration when timer is stopped early
+func recordPartialPomodoro(svc *service.TodoService, todoID int64, minutes int) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.Background()
+		err := svc.AddWorkDuration(ctx, todoID, minutes)
+		if err != nil {
+			return commandExecutedMsg{
+				err: fmt.Errorf("failed to record work duration: %w", err),
+			}
+		}
+		return commandExecutedMsg{
+			message: fmt.Sprintf("Pomodoro stopped. %d minutes recorded for todo #%d", minutes, todoID),
+		}
+	}
 }

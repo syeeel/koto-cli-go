@@ -22,6 +22,8 @@ const (
 	ViewModeAddTodo
 	// ViewModeEditTodo shows the edit todo screen
 	ViewModeEditTodo
+	// ViewModePomodoro shows the Pomodoro timer screen
+	ViewModePomodoro
 )
 
 // Model represents the Bubbletea model for the TUI
@@ -48,6 +50,11 @@ type Model struct {
 	editTodoTitle       string
 	editTodoDescription string
 	editTodoStep        int // 0: title, 1: description
+
+	// Pomodoro timer state
+	pomoTodoID      int64 // ID of todo being worked on (0 if general timer)
+	pomoSecondsLeft int   // Remaining time in seconds (25 minutes = 1500 seconds)
+	pomoRunning     bool  // Whether timer is currently running
 }
 
 // NewModel creates a new TUI model

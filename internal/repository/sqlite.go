@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS todos (
     status INTEGER NOT NULL DEFAULT 0,
     priority INTEGER NOT NULL DEFAULT 0,
     due_date DATETIME,
+    work_duration INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -68,15 +69,51 @@ func NewSQLiteRepository(dbPath string) (*SQLiteRepository, error) {
 
 // initSchema initializes the database schema
 func initSchema(db *sql.DB) error {
-	_, err := db.Exec(schemaSQL)
-	return err
+	// Execute base schema
+	if _, err := db.Exec(schemaSQL); err != nil {
+		return fmt.Errorf("failed to execute schema: %w", err)
+	}
+
+	// Apply migrations for existing databases
+	if err := applyMigrations(db); err != nil {
+		return fmt.Errorf("failed to apply migrations: %w", err)
+	}
+
+	return nil
+}
+
+// applyMigrations applies database migrations for existing databases
+func applyMigrations(db *sql.DB) error {
+	// Migration 002: Add work_duration column (for Pomodoro feature)
+	// Check if column exists
+	var columnExists bool
+	err := db.QueryRow(`
+		SELECT COUNT(*) > 0
+		FROM pragma_table_info('todos')
+		WHERE name='work_duration'
+	`).Scan(&columnExists)
+	if err != nil {
+		return fmt.Errorf("failed to check work_duration column existence: %w", err)
+	}
+
+	// Add column if it doesn't exist
+	if !columnExists {
+		_, err = db.Exec(`
+			ALTER TABLE todos ADD COLUMN work_duration INTEGER NOT NULL DEFAULT 0
+		`)
+		if err != nil {
+			return fmt.Errorf("failed to add work_duration column: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Create creates a new todo item
 func (r *SQLiteRepository) Create(ctx context.Context, todo *model.Todo) error {
 	query := `
-		INSERT INTO todos (title, description, status, priority, due_date, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO todos (title, description, status, priority, due_date, work_duration, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
@@ -85,6 +122,7 @@ func (r *SQLiteRepository) Create(ctx context.Context, todo *model.Todo) error {
 		todo.Status,
 		todo.Priority,
 		todo.DueDate,
+		todo.WorkDuration,
 		todo.CreatedAt,
 		todo.UpdatedAt,
 	)
@@ -104,7 +142,7 @@ func (r *SQLiteRepository) Create(ctx context.Context, todo *model.Todo) error {
 // GetByID retrieves a todo by ID
 func (r *SQLiteRepository) GetByID(ctx context.Context, id int64) (*model.Todo, error) {
 	query := `
-		SELECT id, title, description, status, priority, due_date, created_at, updated_at
+		SELECT id, title, description, status, priority, due_date, work_duration, created_at, updated_at
 		FROM todos
 		WHERE id = ?
 	`
@@ -119,6 +157,7 @@ func (r *SQLiteRepository) GetByID(ctx context.Context, id int64) (*model.Todo, 
 		&todo.Status,
 		&todo.Priority,
 		&dueDate,
+		&todo.WorkDuration,
 		&todo.CreatedAt,
 		&todo.UpdatedAt,
 	)
@@ -140,7 +179,7 @@ func (r *SQLiteRepository) GetByID(ctx context.Context, id int64) (*model.Todo, 
 // GetAll retrieves all todos
 func (r *SQLiteRepository) GetAll(ctx context.Context) ([]*model.Todo, error) {
 	query := `
-		SELECT id, title, description, status, priority, due_date, created_at, updated_at
+		SELECT id, title, description, status, priority, due_date, work_duration, created_at, updated_at
 		FROM todos
 		ORDER BY created_at DESC
 	`
@@ -157,7 +196,7 @@ func (r *SQLiteRepository) GetAll(ctx context.Context) ([]*model.Todo, error) {
 // GetByStatus retrieves todos by status
 func (r *SQLiteRepository) GetByStatus(ctx context.Context, status model.TodoStatus) ([]*model.Todo, error) {
 	query := `
-		SELECT id, title, description, status, priority, due_date, created_at, updated_at
+		SELECT id, title, description, status, priority, due_date, work_duration, created_at, updated_at
 		FROM todos
 		WHERE status = ?
 		ORDER BY created_at DESC
@@ -176,7 +215,7 @@ func (r *SQLiteRepository) GetByStatus(ctx context.Context, status model.TodoSta
 func (r *SQLiteRepository) Update(ctx context.Context, todo *model.Todo) error {
 	query := `
 		UPDATE todos
-		SET title = ?, description = ?, status = ?, priority = ?, due_date = ?, updated_at = ?
+		SET title = ?, description = ?, status = ?, priority = ?, due_date = ?, work_duration = ?, updated_at = ?
 		WHERE id = ?
 	`
 
@@ -188,6 +227,7 @@ func (r *SQLiteRepository) Update(ctx context.Context, todo *model.Todo) error {
 		todo.Status,
 		todo.Priority,
 		todo.DueDate,
+		todo.WorkDuration,
 		todo.UpdatedAt,
 		todo.ID,
 	)
@@ -273,6 +313,7 @@ func (r *SQLiteRepository) scanTodos(rows *sql.Rows) ([]*model.Todo, error) {
 			&todo.Status,
 			&todo.Priority,
 			&dueDate,
+			&todo.WorkDuration,
 			&todo.CreatedAt,
 			&todo.UpdatedAt,
 		)
@@ -292,4 +333,30 @@ func (r *SQLiteRepository) scanTodos(rows *sql.Rows) ([]*model.Todo, error) {
 	}
 
 	return todos, nil
+}
+
+// AddWorkDuration adds work duration (in minutes) to a todo
+func (r *SQLiteRepository) AddWorkDuration(ctx context.Context, id int64, minutes int) error {
+	query := `
+		UPDATE todos
+		SET work_duration = work_duration + ?,
+		    updated_at = ?
+		WHERE id = ?
+	`
+
+	result, err := r.db.ExecContext(ctx, query, minutes, time.Now(), id)
+	if err != nil {
+		return fmt.Errorf("failed to add work duration: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return ErrTodoNotFound
+	}
+
+	return nil
 }

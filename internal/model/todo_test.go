@@ -110,3 +110,66 @@ func TestTodo_IsOverdue(t *testing.T) {
 		})
 	}
 }
+
+func TestTodo_GetWorkDurationFormatted(t *testing.T) {
+	tests := []struct {
+		name         string
+		workDuration int
+		want         string
+	}{
+		{
+			name:         "zero duration returns empty string",
+			workDuration: 0,
+			want:         "",
+		},
+		{
+			name:         "less than one hour",
+			workDuration: 25,
+			want:         "25m",
+		},
+		{
+			name:         "exactly one hour",
+			workDuration: 60,
+			want:         "1h",
+		},
+		{
+			name:         "one hour and some minutes",
+			workDuration: 65,
+			want:         "1h 5m",
+		},
+		{
+			name:         "multiple hours with minutes",
+			workDuration: 125,
+			want:         "2h 5m",
+		},
+		{
+			name:         "exactly multiple hours (no remainder)",
+			workDuration: 180,
+			want:         "3h",
+		},
+		{
+			name:         "large duration",
+			workDuration: 1439, // 23h 59m
+			want:         "23h 59m",
+		},
+		{
+			name:         "very large duration (24+ hours)",
+			workDuration: 1500, // 25h
+			want:         "25h",
+		},
+		{
+			name:         "negative duration (defensive programming)",
+			workDuration: -10,
+			want:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			todo := Todo{WorkDuration: tt.workDuration}
+			if got := todo.GetWorkDurationFormatted(); got != tt.want {
+				t.Errorf("GetWorkDurationFormatted() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

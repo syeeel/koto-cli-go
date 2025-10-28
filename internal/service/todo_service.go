@@ -19,6 +19,8 @@ var (
 	ErrInvalidTitle = errors.New("title cannot be empty")
 	// ErrInvalidPriority is returned when the priority is invalid
 	ErrInvalidPriority = errors.New("invalid priority")
+	// ErrInvalidWorkDuration is returned when work duration is invalid (negative or zero)
+	ErrInvalidWorkDuration = errors.New("work duration must be positive")
 	// ErrFileNotFound is returned when the specified file is not found
 	ErrFileNotFound = errors.New("file not found")
 	// ErrInvalidJSON is returned when the JSON format is invalid
@@ -194,4 +196,29 @@ func (s *TodoService) validatePriority(priority model.Priority) error {
 		return ErrInvalidPriority
 	}
 	return nil
+}
+
+// AddWorkDuration adds work duration (in minutes) to a todo
+// Returns an error if the todo doesn't exist or if the duration is invalid
+func (s *TodoService) AddWorkDuration(ctx context.Context, id int64, minutes int) error {
+	// Validate work duration (must be positive)
+	if minutes <= 0 {
+		return ErrInvalidWorkDuration
+	}
+
+	// Check if todo exists
+	todo, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if err == repository.ErrTodoNotFound {
+			return ErrTodoNotFound
+		}
+		return err
+	}
+
+	if todo == nil {
+		return ErrTodoNotFound
+	}
+
+	// Add work duration
+	return s.repo.AddWorkDuration(ctx, id, minutes)
 }

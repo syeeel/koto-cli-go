@@ -24,6 +24,8 @@ func (m Model) View() string {
 		return m.renderAddTodoView()
 	case ViewModeEditTodo:
 		return m.renderEditTodoView()
+	case ViewModePomodoro:
+		return m.renderPomodoroView()
 	default:
 		return m.renderListView()
 	}
@@ -42,12 +44,13 @@ func (m Model) renderListView() string {
 		s.WriteString(emptyStyle.Render("  No todos yet. Use /add to create your first todo!  "))
 		s.WriteString("\n")
 	} else {
-		// Header with fixed widths: No.(4), Title(40), Description(40), Create Date(11)
+		// Header with fixed widths: No.(4), Title(35), Description(35), Total time(10), Create Date(11)
 		headerNo := padStringToWidth("No.", 4)
-		headerTitle := padStringToWidth("Title", 40)
-		headerDesc := padStringToWidth("Description", 40)
+		headerTitle := padStringToWidth("Title", 35)
+		headerDesc := padStringToWidth("Description", 35)
+		headerTime := padStringToWidth("Total time", 10)
 		headerDate := padStringToWidth("Create Date", 11)
-		header := fmt.Sprintf(" %s   %s   %s   %s ", headerNo, headerTitle, headerDesc, headerDate)
+		header := fmt.Sprintf(" %s   %s   %s   %s   %s ", headerNo, headerTitle, headerDesc, headerTime, headerDate)
 		s.WriteString(headerStyle.Render(header))
 		s.WriteString("\n")
 
@@ -78,7 +81,7 @@ func (m Model) renderListView() string {
 
 	// Help text
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("Commands: /add, /list, /done, /delete, /edit, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: /exit or Ctrl+C"))
+	s.WriteString(helpStyle.Render("Commands: /add, /list, /done, /delete, /edit, /pomo, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: /exit or Ctrl+C"))
 
 	return s.String()
 }
@@ -89,20 +92,27 @@ func (m Model) renderTodoItem(index int, todo *model.Todo) string {
 	no := fmt.Sprintf("%d", todo.ID)
 	no = padStringToWidth(no, 4)
 
-	// Title - width: 40 (display width, not character count)
-	title := truncateStringByWidth(todo.Title, 40)
-	title = padStringToWidth(title, 40)
+	// Title - width: 35 (display width, not character count)
+	title := truncateStringByWidth(todo.Title, 35)
+	title = padStringToWidth(title, 35)
 
-	// Description - width: 40 (display width, not character count)
-	desc := truncateStringByWidth(todo.Description, 40)
-	desc = padStringToWidth(desc, 40)
+	// Description - width: 35 (display width, not character count)
+	desc := truncateStringByWidth(todo.Description, 35)
+	desc = padStringToWidth(desc, 35)
+
+	// Total time - width: 10
+	totalTime := todo.GetWorkDurationFormatted()
+	if totalTime == "" {
+		totalTime = "-"
+	}
+	totalTime = padStringToWidth(totalTime, 10)
 
 	// Create Date (format: YYYY-MM-DD) - width: 11
 	createDate := todo.CreatedAt.Format("2006-01-02")
 	createDate = padStringToWidth(createDate, 11)
 
 	// Build the row with spacing (no vertical separators for cleaner look)
-	row := fmt.Sprintf(" %s   %s   %s   %s ", no, title, desc, createDate)
+	row := fmt.Sprintf(" %s   %s   %s   %s   %s ", no, title, desc, totalTime, createDate)
 
 	// Apply cursor style if selected (neon green text, transparent background)
 	if m.cursor == index {
@@ -212,6 +222,10 @@ func (m Model) renderHelpContent() string {
 		{"/edit <id>", "Edit a todo (interactive)", "/edit 1"},
 		{"", "  → Step 1: Edit title", ""},
 		{"", "  → Step 2: Edit description (optional)", ""},
+		{"", "", ""},
+		{"/pomo [id]", "Start a 25-minute Pomodoro timer", "/pomo"},
+		{"", "  → General timer (no task)", "/pomo"},
+		{"", "  → Task-specific timer (records time)", "/pomo 1"},
 		{"", "", ""},
 		{"/export [filepath]", "Export todos to JSON", "/export ~/todos.json"},
 		{"/import <filepath>", "Import todos from JSON", "/import ~/todos.json"},
@@ -461,6 +475,71 @@ func (m Model) renderEditTodoView() string {
 	} else {
 		s.WriteString(helpStyle.Render("Press Enter to save | Esc to go back"))
 	}
+
+	return s.String()
+}
+
+// renderPomodoroView renders the Pomodoro timer screen
+func (m Model) renderPomodoroView() string {
+	var s strings.Builder
+
+	// Title with dark background
+	s.WriteString(titleStyle.Render(" 🍅 Pomodoro Timer "))
+	s.WriteString("\n\n")
+
+	// Timer display - large and centered
+	minutes := m.pomoSecondsLeft / 60
+	seconds := m.pomoSecondsLeft % 60
+	timerText := fmt.Sprintf("%02d:%02d", minutes, seconds)
+
+	// Make the timer text large by adding spacing
+	largeTimerText := ""
+	for _, char := range timerText {
+		largeTimerText += string(char) + " "
+	}
+	largeTimerDisplay := lipgloss.NewStyle().
+		Foreground(accentGreen).
+		Bold(true).
+		Align(lipgloss.Center).
+		Width(60).
+		MarginTop(3).
+		MarginBottom(3).
+		Render(largeTimerText)
+
+	s.WriteString(largeTimerDisplay)
+	s.WriteString("\n")
+
+	// Show which todo is being worked on
+	if m.pomoTodoID > 0 {
+		// Find the todo
+		var todoTitle string
+		for _, todo := range m.todos {
+			if todo.ID == m.pomoTodoID {
+				todoTitle = todo.Title
+				break
+			}
+		}
+
+		if todoTitle != "" {
+			taskInfo := fmt.Sprintf("Working on: #%d - %s", m.pomoTodoID, todoTitle)
+			s.WriteString(messageStyle.Render(taskInfo))
+			s.WriteString("\n\n")
+		}
+	} else {
+		s.WriteString(helpStyle.Render("General Pomodoro session"))
+		s.WriteString("\n\n")
+	}
+
+	// Status indicator
+	if m.pomoRunning {
+		s.WriteString(messageStyle.Render("⏱️  Timer is running..."))
+	} else {
+		s.WriteString(helpStyle.Render("Timer paused"))
+	}
+	s.WriteString("\n\n")
+
+	// Help text
+	s.WriteString(helpStyle.Render("Press Esc or Enter to stop timer"))
 
 	return s.String()
 }

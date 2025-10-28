@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -127,6 +128,43 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 
+		// Handle pomodoro view
+		if m.viewMode == ViewModePomodoro {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				return m, tea.Quit
+
+			case "esc", "enter":
+				// Calculate elapsed time
+				elapsedSeconds := 1500 - m.pomoSecondsLeft
+				elapsedMinutes := elapsedSeconds / 60
+
+				// Stop timer and return to list view first
+				m.viewMode = ViewModeList
+				m.pomoRunning = false
+
+				// Set message based on key
+				if msg.String() == "esc" {
+					m.message = "Pomodoro cancelled"
+				} else {
+					m.message = "Pomodoro stopped"
+				}
+
+				// Record work duration if this was a task-specific timer and at least 1 minute elapsed
+				if m.pomoTodoID > 0 && elapsedMinutes > 0 {
+					return m, tea.Batch(
+						recordPartialPomodoro(m.service, m.pomoTodoID, elapsedMinutes),
+						loadTodos(m.service),
+					)
+				}
+
+				// Return to list view without recording
+				return m, loadTodos(m.service)
+			}
+			return m, nil
+		}
+
 		// Handle list view keys
 		switch msg.String() {
 		case "ctrl+c":
@@ -179,6 +217,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.message = msg.message
 		m.err = msg.err
 		// Reload todos after command execution
+		return m, loadTodos(m.service)
+
+	case pomodoroTickMsg:
+		// Only process ticks if timer is running and in Pomodoro view
+		if m.pomoRunning && m.viewMode == ViewModePomodoro {
+			m.pomoSecondsLeft--
+
+			// Check if timer completed
+			if m.pomoSecondsLeft <= 0 {
+				m.pomoRunning = false
+				// Record work duration and complete timer
+				return m, completePomodoroWithRecording(m.service, m.pomoTodoID)
+			}
+
+			// Continue ticking
+			return m, tickPomodoro()
+		}
+		return m, nil
+
+	case pomodoroCompleteMsg:
+		// Timer completed - return to list view with success message
+		m.viewMode = ViewModeList
+		if msg.todoID > 0 {
+			m.message = fmt.Sprintf("Pomodoro completed! 25 minutes recorded for todo #%d", msg.todoID)
+		} else {
+			m.message = "Pomodoro completed!"
+		}
+		// Reload todos to show updated work duration
 		return m, loadTodos(m.service)
 	}
 
@@ -245,6 +311,50 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 			m.err = nil
 			return m, nil
 		}
+	}
+
+	// Check if command is /pomo [id] - start Pomodoro timer
+	if value == "/pomo" || strings.HasPrefix(value, "/pomo ") {
+		parts := strings.Fields(value)
+		todoID := int64(0)
+
+		// Parse optional todo ID
+		if len(parts) == 2 {
+			id, err := strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				m.err = errors.New("invalid todo ID")
+				return m, nil
+			}
+
+			// Verify todo exists
+			var found bool
+			for _, todo := range m.todos {
+				if todo.ID == id {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				m.err = errors.New("todo not found")
+				return m, nil
+			}
+
+			todoID = id
+		} else if len(parts) > 2 {
+			m.err = errors.New("usage: /pomo [todo_id]")
+			return m, nil
+		}
+
+		// Switch to Pomodoro mode
+		m.viewMode = ViewModePomodoro
+		m.pomoTodoID = todoID
+		m.pomoSecondsLeft = 1500 // 25 minutes = 1500 seconds
+		m.pomoRunning = true
+		m.err = nil
+
+		// Start the timer
+		return m, tickPomodoro()
 	}
 
 	return m, parseAndExecuteCommand(m.service, value)
