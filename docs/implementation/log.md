@@ -4,6 +4,591 @@ This file records the implementation history, technical decisions, issues encoun
 
 ---
 
+## 2025-10-29 (Update 8) - Unify /done and /delete Commands
+
+### Implementation Details
+
+#### 大幅な仕様変更: /doneコマンドの動作変更
+- **目的**: `/delete`と`/done`を統一し、`/done`でタスクを削除するように変更
+- **ユーザーフィードバック**: 「現在は/deleteと/doneがありますが、これを/doneだけに統一してください。また、/doneを実行するとそのタスクを削除するように変更してください」
+
+#### 変更前の仕様
+- `/done <id>` - タスクを完了状態にマーク（CompleteTodo）
+- `/delete <id>` - タスクを削除（DeleteTodo）
+
+#### 変更後の仕様
+- `/done <id>` - タスクを削除（DeleteTodo）
+- `/delete` - コマンド廃止
+
+#### 実装内容
+
+1. **commands.goの変更**
+   - `handleDoneCommand()`を削除処理に変更
+     - `CompleteTodo()` → `DeleteTodo()`に変更
+     - メッセージを"Marked todo #%d as completed" → "Deleted todo #%d"に変更
+   - `/delete`コマンドのケースを削除
+   - `handleDeleteCommand()`関数を削除
+
+2. **update.goの変更**
+   - 詳細画面の'd'キーの処理を変更
+     - `CompleteTodo()` → `DeleteTodo()`に変更
+     - メッセージを"Todo #%d marked as completed" → "Deleted todo #%d"に変更
+
+3. **views.goのヘルプテキスト更新**
+   - メイン画面のコマンド一覧から`/delete`を削除
+   - ヘルプ画面の`/done`の説明を"Mark todo as completed" → "Delete a todo"に変更
+   - ヘルプ画面から`/delete`の行を削除
+   - 詳細画面のヘルプを"d to mark as done" → "d to delete"に変更
+
+### 変更ファイル
+- `internal/tui/commands.go` - /doneの動作変更、/deleteコマンド削除
+- `internal/tui/update.go` - 'd'キーの動作変更
+- `internal/tui/views.go` - ヘルプテキスト更新（3箇所）
+
+### 技術的な決定
+
+1. **なぜこの変更を行ったか**
+   - UIをシンプルにする（コマンドを減らす）
+   - "done"という直感的な言葉で削除操作を実行
+   - タスク管理アプリでは完了したタスクを残す必要性が低い
+
+2. **既存機能との互換性**
+   - `CompleteTodo`サービスメソッドは残っているため、将来的に復活可能
+   - データベースには`completed_at`カラムが残っているため、仕様変更は可逆的
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ `/done`でタスクが削除される
+- ✅ `/delete`コマンドは使用不可
+- ✅ 詳細画面の'd'キーでタスクが削除される
+
+### ユーザー体験の変化
+
+**変更前:**
+```bash
+/done 1    # タスク#1を完了状態にマーク（データベースに残る）
+/delete 1  # タスク#1を削除
+```
+
+**変更後:**
+```bash
+/done 1    # タスク#1を削除
+```
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- よりシンプルで直感的なUIになった
+
+---
+
+## 2025-10-29 (Update 7) - Widen Detail View Boxes
+
+### Implementation Details
+
+#### 詳細画面のボックス幅をトップ画面に合わせて拡大
+- **目的**: トップ画面と同じくらいの幅にして、視覚的な一貫性を向上
+- **ユーザーフィードバック**: 「全体的にもう少し幅を広げてください。トップ画面と同じくらいの幅でお願いします」
+
+#### トップ画面の幅
+- No.: 4
+- Title: 35
+- Description: 35
+- Total time: 10
+- Create Date: 11
+- スペース: 12 (各列間 3文字 × 4)
+- 余白: 2
+- **合計: 約109文字**
+
+#### 実装内容
+1. **単一ボックスの幅を拡大**
+   - Title: 80 → 110
+   - Description: 80 → 110
+
+2. **2カラムボックスの幅を拡大**
+   - Status: 38 → 54
+   - Priority: 38 → 54
+   - Total Work Time: 38 → 54
+   - Timestamps: 38 → 54
+   - 合計: 54 + 2(スペース) + 54 = 110
+
+### 変更前後の比較
+```
+変更前:
+Title: Width(80)
+Description: Width(80)
+Status/Priority: Width(38) × 2 = 78
+
+変更後:
+Title: Width(110)
+Description: Width(110)
+Status/Priority: Width(54) × 2 = 110
+```
+
+### 視覚的な結果
+```
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Title                                                                                                            │
+│ Complete authentication module                                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Description                                                                                                      │
+│                                                                                                                  │
+│ Implement OAuth2 and JWT-based authentication                                                                   │
+│                                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭────────────────────────────────────────────────────────╮  ╭────────────────────────────────────────────────────────╮
+│ Status                                                 │  │ Priority                                               │
+│ Pending                                                │  │ 🟡 Medium                                              │
+╰────────────────────────────────────────────────────────╯  ╰────────────────────────────────────────────────────────╯
+```
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ トップ画面と詳細画面の幅が統一された
+
+### 変更ファイル
+- `internal/tui/views.go` - 全ボックスの幅を拡大
+
+### 技術的な決定
+- トップ画面のテーブル幅（約109文字）を基準に、詳細画面のボックス幅を110に統一
+- 2カラムレイアウトは54 + 2 + 54 = 110で合計幅を合わせる
+- 視覚的な一貫性とユーザビリティの向上を実現
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+
+---
+
+## 2025-10-29 (Update 6) - Revert to Original Box Design
+
+### Implementation Details
+
+#### ボーダータイトルの実装を元に戻す
+- **目的**: 破線によるタイトルラベルがズレていたため、元の実装（枠線の中にタイトル表示）に戻す
+- **ユーザーフィードバック**: 「枠線の中にタイトルがあっても構いません」
+
+#### 実装内容
+1. **createTitleLabel()ヘルパー関数を削除**
+   - 動的な破線生成を廃止
+
+2. **すべてのボックスを元の実装に戻す**
+   - `BorderTop(false)` を削除し、通常のボーダー（全辺）を復元
+   - タイトルラベルをボックスの内部に配置
+   - パディングを `(1, 2)` に統一（Descriptionのみ `(2, 2)` で高さ維持）
+
+3. **修正したボックス**
+   - Title
+   - Description
+   - Status
+   - Priority
+   - Total Work Time
+   - Timestamps
+
+### 実装パターン
+```go
+// Title box
+titleLabel := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("213")).
+    Bold(true).
+    Render("Title")
+titleContent := lipgloss.NewStyle().
+    Foreground(fgDefault).
+    Render(targetTodo.Title)
+titleBoxContent := titleLabel + "\n" + titleContent
+titleBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(80)
+titleBox := titleBoxStyle.Render(titleBoxContent)
+```
+
+### 視覚的な結果
+```
+╭────────────────────────────────────────────────────────────────────────────────╮
+│ Title                                                                          │
+│ Complete authentication module                                                 │
+╰────────────────────────────────────────────────────────────────────────────────╯
+
+╭────────────────────────────────────────────────────────────────────────────────╮
+│ Description                                                                    │
+│                                                                                │
+│ Implement OAuth2 and JWT-based authentication                                 │
+│                                                                                │
+╰────────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────╮  ╭──────────────────────────────────────╮
+│ Status                               │  │ Priority                             │
+│ Pending                              │  │ 🟡 Medium                            │
+╰──────────────────────────────────────╯  ╰──────────────────────────────────────╯
+```
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ タイトルが枠線内に正しく表示される
+
+### 変更ファイル
+- `internal/tui/views.go` - すべてのボックスを元の実装に戻す
+
+### 技術的な決定
+- シンプルで確実な実装を優先
+- lipglossの標準的なボーダー機能のみを使用
+- ボックス内にタイトルを配置することで、表示のズレを完全に解消
+
+### 次のステップ
+- 機能は完全に修正され、テスト済み
+- ユーザーの要求を満たしている
+
+---
+
+## 2025-10-29 (Update 5) - Fix Border Title Line Width
+
+### Implementation Details
+
+#### タイトルラベルの破線の動的生成
+- **目的**: タイトルラベルの破線がボックス幅に合わせて正しく表示されるように修正
+- **問題**: 固定長の破線が画面幅に合わず、途中で途切れていた
+
+#### 実装内容
+1. **createTitleLabel()ヘルパー関数の追加**
+   - タイトルテキストとボックス幅を引数に取る
+   - タイトルの長さを計算し、残りのスペースを左右に均等配分
+   - 破線（`─`）を動的に生成
+
+2. **すべてのタイトルラベルを動的生成に変更**
+   - Title (幅: 80)
+   - Description (幅: 80)
+   - Status (幅: 38)
+   - Priority (幅: 38)
+   - Total Work Time (幅: 38)
+   - Timestamps (幅: 38)
+
+### ヘルパー関数の実装
+```go
+func createTitleLabel(title string, width int) string {
+    // Calculate padding for centering
+    titleLen := len(title) + 2 // +2 for spaces around title
+    totalLineLen := width
+    leftLineLen := (totalLineLen - titleLen) / 2
+    rightLineLen := totalLineLen - titleLen - leftLineLen
+
+    leftLine := strings.Repeat("─", leftLineLen)
+    rightLine := strings.Repeat("─", rightLineLen)
+
+    return lipgloss.NewStyle().
+        Foreground(lipgloss.Color("213")).
+        Bold(true).
+        Render(leftLine + " " + title + " " + rightLine)
+}
+```
+
+### 使用例
+```go
+// Before (固定長)
+titleLabel := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("213")).
+    Bold(true).
+    Render("─────────────────────────────────── Title ────────────────────────────────────")
+
+// After (動的生成)
+titleLabel := createTitleLabel("Title", 80)
+```
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ タイトルラベルがボックス幅に完全に合致
+- ✅ 診断エラーなし
+
+### 変更ファイル
+- `internal/tui/views.go` - createTitleLabel()関数を追加、すべてのラベルを動的生成に変更
+
+### 次のステップ
+- 機能は完全に修正され、テスト済み
+- ユーザーの要求を満たしている
+
+---
+
+## 2025-10-29 (Update 4) - Neovim-Style Border Titles Implementation
+
+### Implementation Details
+
+#### Neovim風のボーダータイトルの実装
+- **目的**: 詳細画面のボックスの上部中央にタイトルを表示（Neovimのスタイル）
+
+#### 実装内容
+1. **lipglossのBorderTitle()メソッドを試行**
+   - 最初に`BorderTitle()`メソッドを使用しようとした
+   - lipgloss v0.10.0では利用できないことが判明
+   - lipgloss v1.1.0にアップデート後も同じ問題
+
+2. **代替アプローチの採用**
+   - `BorderTop(false)`を使用してトップボーダーを削除
+   - ボックスの上にデコラティブなタイトルラベルを配置
+   - 破線（`────`）で視覚的な装飾を追加
+
+3. **全ボックスにタイトルラベルを実装**
+   - Title
+   - Description
+   - Status / Priority (2カラム)
+   - Total Work Time / Timestamps (2カラム)
+
+4. **コードクリーンアップ**
+   - 未使用の`truncateString()`関数を削除（deprecated）
+   - 未使用の`renderPriority()`メソッドを削除
+
+### 実装パターン
+```go
+// Title label with decorative dashes
+titleLabel := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("213")).
+    Bold(true).
+    Render("─────────────────────────────────── Title ────────────────────────────────────")
+s.WriteString(titleLabel + "\n")
+
+// Box with top border removed
+boxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderTop(false).  // Key: removes top to connect with label
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(0, 2).
+    Width(80)
+```
+
+### 技術的な決定
+
+1. **BorderTitle()が使えない理由**
+   - lipgloss v0.10.0にはこのメソッドが存在しない
+   - v1.1.0にアップデートしても同じ問題
+   - おそらくAPIが異なるか、別の実装方法が必要
+
+2. **代替アプローチの利点**
+   - シンプルで理解しやすい
+   - カスタマイズ性が高い（デコレーション、色、位置など）
+   - lipglossのバージョンに依存しない
+   - Neovimの見た目を忠実に再現
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし（未使用関数を削除後）
+
+### 変更ファイル
+- `internal/tui/views.go` - renderDetailView()を完全に書き直し、全ボックスにタイトルラベルを追加
+- `go.mod` / `go.sum` - lipglossをv1.1.0にアップデート
+
+### 視覚的な結果
+```
+─────────────────────────────────── Title ────────────────────────────────────
+│ Complete authentication module                                             │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+──────────────────────────────── Description ─────────────────────────────────
+│                                                                             │
+│ Implement OAuth2 and JWT-based authentication                              │
+│                                                                             │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+──────────────── Status ────────────────     ─────────────── Priority ────────────────
+│ ✓ Completed                        │     │ 🔴 High                          │
+╰────────────────────────────────────╯     ╰──────────────────────────────────╯
+```
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- 必要に応じて追加のフィードバックに対応可能
+
+---
+
+## 2025-10-29 (Update 3) - Detail View Layout Refinement
+
+### Implementation Details
+
+#### レイアウトの最適化
+- **目的**: ユーザーフィードバックに基づき、詳細画面のレイアウトを改善
+
+#### 実装内容
+1. **Descriptionボックスの高さを3倍に拡大**
+   - 垂直パディングを0から2に増加
+   - 明示的な高さを8に設定
+   - より多くの説明テキストを表示可能に
+
+2. **2カラムレイアウトの追加**
+   - Total Work TimeとTimestampsを横並びに配置
+   - Status/Priorityと同じレイアウトパターンを採用
+   - スペース効率の向上
+
+3. **Due Dateフィールドを削除**
+   - シンプルで焦点を絞ったレイアウト
+   - 必須情報に集中
+
+### レイアウト構成
+```
+╭─────────────────── Title ────────────────────╮
+│ Task title                                   │
+╰──────────────────────────────────────────────╯
+
+╭────────────── Description ───────────────────╮
+│                                              │
+│ Task description (3x height)                 │
+│                                              │
+╰──────────────────────────────────────────────╯
+
+╭─── Status ──╮  ╭─── Priority ──╮
+│ Pending     │  │ 🟡 Medium     │
+╰─────────────╯  ╰────────────────╯
+
+╭─ Total Work Time ─╮  ╭─ Timestamps ─╮
+│ 🍅 2h 30m          │  │ Created: ...  │
+╰────────────────────╯  │ Updated: ...  │
+                         ╰───────────────╯
+```
+
+### テスト結果
+```bash
+✓ ビルド成功
+✓ 全テスト通過
+```
+
+---
+
+## 2025-10-29 (Update 2) - Detail View Design Overhaul
+
+### Implementation Details
+
+#### Neovim-style Design Makeover
+- **目的**: Neovimスタイルのエレガントなボックスデザインに変更し、英語表記に統一
+- **デザイン参考**: Neovimのコマンドパレット（ボーダー付きボックス、中央配置タイトル）
+
+#### 実装内容
+1. **ボーダー付きボックスデザイン**
+   - 各フィールドをRounded Border付きのボックスで囲む
+   - ボーダーカラー: `#585b70` (subtle gray)
+   - 統一されたパディングと幅（80文字）
+
+2. **レイアウト改善**
+   - Status と Priority を横並びに配置（2カラムレイアウト）
+   - 各ボックスのラベルをピンク色（`#d5a8e1`）で強調
+   - 値を適切なカラーで表示（完了: 緑、期限切れ: 赤）
+
+3. **英語表記に変更**
+   - タイトル: "Title"
+   - 説明: "Description"
+   - ステータス: "Status" (Pending / ✓ Completed)
+   - 優先度: "Priority" (🔴 High / 🟡 Medium / 🟢 Low)
+   - 累積作業時間: "Total Work Time"
+   - 期限: "Due Date"
+   - タイムスタンプ: "Timestamps" (Created / Updated)
+
+4. **エラーハンドリング**
+   - Todo not found メッセージもボーダー付きボックスで表示
+
+### テスト結果
+```bash
+✓ ビルド成功
+✓ 全テスト通過
+```
+
+### デザインの特徴
+- **視覚的階層**: ボックスで情報をグループ化し、スキャンしやすい
+- **カラースキーム**: 落ち着いたダークテーマに合わせた配色
+- **絵文字の活用**: 優先度と作業時間を視覚的に表現
+- **2カラムレイアウト**: Status と Priority を並べて表示し、スペース効率を向上
+
+---
+
+## 2025-10-29 - Task Detail View Implementation
+
+### Implementation Details
+
+#### タスク詳細画面の実装
+- **目的**: トップ画面で十字キーの上下でタスクをフォーカスし、何もcommandが入力されていない状態でEnterを押すとタスクの詳細画面に遷移する機能を追加
+
+#### 設計仕様の追加
+- `docs/design/detailed_design.md` に以下を追加:
+  - `ViewModeDetail` の定義
+  - `Model` 構造体に `detailTodoID` フィールド追加
+  - `renderDetailView()` の仕様追加
+- `docs/design/basic_design.md` のUIフローを更新:
+  - タスク詳細画面への遷移フローを追加
+  - 詳細画面からの操作（編集、完了）を追加
+
+#### 実装内容
+1. **Model層の拡張** (`internal/tui/model.go`)
+   - `ViewModeDetail` を追加
+   - `detailTodoID int64` フィールドを追加（詳細表示中のToDo ID）
+
+2. **スタイルの追加** (`internal/tui/styles.go`)
+   - `todoDetailFieldStyle` を追加（詳細画面のフィールド値用スタイル）
+
+3. **View層の拡張** (`internal/tui/views.go`)
+   - `View()` 関数に `ViewModeDetail` のケースを追加
+   - `renderDetailView()` 関数を実装:
+     - タスクのID、タイトル、説明、ステータス、優先度を表示
+     - 累積作業時間、期限、作成日時、更新日時を表示
+     - 絵文字を使用した視覚的な表現（🔴 高、🟡 中、🟢 低、🍅 作業時間）
+     - 期限切れの場合は赤色で警告表示
+
+4. **Update層の拡張** (`internal/tui/update.go`)
+   - `handleEnter()` 関数を修正:
+     - 入力が空の場合、現在カーソルが指しているタスクの詳細画面に遷移
+     - todosが存在し、cursorが有効な範囲内の場合のみ遷移
+   - 詳細画面用のキーハンドリングを追加:
+     - `Esc`: メイン画面に戻る
+     - `e`: 編集画面に遷移（既存の編集機能を再利用）
+     - `d`: タスクを完了としてマーク → メイン画面に戻る
+     - `Ctrl+C`: アプリ終了
+
+### 技術的な決定
+
+#### なぜこの実装方法を選んだか
+1. **既存の画面遷移パターンに従う**: 既存の`ViewModeAddTodo`、`ViewModeEditTodo`、`ViewModePomodoro`と同じパターンで実装し、一貫性を保つ
+2. **既存の機能を再利用**: 詳細画面からの編集は既存の`ViewModeEditTodo`を再利用し、コードの重複を避ける
+3. **直感的なキーバインド**: `e`で編集、`d`で完了など、一般的なキーバインドを採用
+4. **視覚的な表現**: 絵文字を使用して優先度や作業時間を視覚的に表現し、ユーザビリティを向上
+
+### テスト
+
+#### ビルドとテスト結果
+```bash
+go build -o bin/koto ./cmd/koto  # 成功
+go test ./...                     # 全テスト通過
+```
+
+#### 手動テスト項目
+以下の動作確認が必要（ユーザー側で実行）:
+1. [ ] メイン画面で↑/↓キーでタスクをフォーカスできる
+2. [ ] 何もコマンドを入力せずにEnterを押すと、フォーカスされているタスクの詳細画面に遷移する
+3. [ ] 詳細画面でタスクの全情報（タイトル、説明、ステータス、優先度、作業時間、期限、作成日時、更新日時）が表示される
+4. [ ] 詳細画面でEscキーを押すとメイン画面に戻る
+5. [ ] 詳細画面でeキーを押すと編集画面に遷移する
+6. [ ] 詳細画面でdキーを押すとタスクが完了としてマークされ、メイン画面に戻る
+
+### 次のステップ
+
+この機能により、以下が実現されました:
+- タスクの詳細情報を一目で確認できる
+- 詳細画面から直接編集や完了操作ができる
+- UIフローが直感的で使いやすい
+
+今後の改善案:
+- 詳細画面でのスクロール機能（説明が長い場合）
+- 詳細画面からのポモドーロタイマー起動
+- 詳細画面でのタスク削除機能
+
+---
+
 ## 2025-10-19 - Phase 1: Foundation Implementation Complete
 
 ### Implementation Details

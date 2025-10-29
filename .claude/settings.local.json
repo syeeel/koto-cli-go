@@ -23,7 +23,8 @@
       "Bash(go env:*)",
       "Bash(curl:*)",
       "Bash(ping:*)",
-      "Read(//etc/**)"
+      "Read(//etc/**)",
+      "Bash(go clean:*)"
     ],
     "deny": [],
     "ask": []

@@ -412,6 +412,7 @@ const (
     ViewModeDelete
     ViewModeHelp
     ViewModePomodoro
+    ViewModeDetail  // タスク詳細表示画面
 )
 
 type Model struct {
@@ -428,6 +429,7 @@ type Model struct {
     pomodoroTodoID  *int64        // ポモドーロタイマーに紐づくToDo ID (nilの場合は紐づけなし)
     pomodoroStarted time.Time     // ポモドーロ開始時刻
     pomodoroDuration time.Duration // ポモドーロの長さ（デフォルト25分）
+    detailTodoID    int64         // 詳細表示中のToDo ID
 }
 
 func NewModel(service *service.TodoService) Model {
@@ -524,6 +526,8 @@ func (m Model) View() string {
         return m.renderHelpView()
     case ViewModePomodoro:
         return m.renderPomodoroView()
+    case ViewModeDetail:
+        return m.renderDetailView()
     default:
         return m.renderListView()
     }
@@ -627,6 +631,97 @@ func (m Model) renderPomodoroView() string {
     } else {
         s += helpStyle.Render("Escキーでキャンセル")
     }
+
+    return s
+}
+
+func (m Model) renderDetailView() string {
+    var s string
+
+    // 詳細表示するToDoを取得
+    var targetTodo *model.Todo
+    for _, todo := range m.todos {
+        if todo.ID == m.detailTodoID {
+            targetTodo = todo
+            break
+        }
+    }
+
+    if targetTodo == nil {
+        s += errorStyle.Render("指定されたToDoが見つかりません") + "\n"
+        s += helpStyle.Render("Escキーでメイン画面に戻る")
+        return s
+    }
+
+    // タイトル
+    s += titleStyle.Render(fmt.Sprintf("📋 ToDo Details #%d", targetTodo.ID)) + "\n\n"
+
+    // タイトル表示
+    s += headerStyle.Render(" タイトル ") + "\n"
+    s += todoDetailFieldStyle.Render(targetTodo.Title) + "\n\n"
+
+    // 説明表示
+    s += headerStyle.Render(" 説明 ") + "\n"
+    if targetTodo.Description != "" {
+        s += todoDetailFieldStyle.Render(targetTodo.Description) + "\n\n"
+    } else {
+        s += emptyStyle.Render("（説明なし）") + "\n\n"
+    }
+
+    // ステータス表示
+    s += headerStyle.Render(" ステータス ") + "\n"
+    status := "未完了"
+    if targetTodo.IsCompleted() {
+        status = "完了"
+    }
+    s += todoDetailFieldStyle.Render(status) + "\n\n"
+
+    // 優先度表示
+    s += headerStyle.Render(" 優先度 ") + "\n"
+    priorityStr := ""
+    switch targetTodo.Priority {
+    case model.PriorityHigh:
+        priorityStr = "高"
+    case model.PriorityMedium:
+        priorityStr = "中"
+    case model.PriorityLow:
+        priorityStr = "低"
+    }
+    s += todoDetailFieldStyle.Render(priorityStr) + "\n\n"
+
+    // 累積作業時間表示
+    s += headerStyle.Render(" 累積作業時間 ") + "\n"
+    if targetTodo.WorkDuration > 0 {
+        hours := targetTodo.WorkDuration / 60
+        minutes := targetTodo.WorkDuration % 60
+        workDurationStr := fmt.Sprintf("%dh %dm", hours, minutes)
+        s += todoDetailFieldStyle.Render(workDurationStr) + "\n\n"
+    } else {
+        s += emptyStyle.Render("（記録なし）") + "\n\n"
+    }
+
+    // 期限表示
+    s += headerStyle.Render(" 期限 ") + "\n"
+    if targetTodo.DueDate != nil {
+        dueDateStr := targetTodo.DueDate.Format("2006-01-02 15:04")
+        s += todoDetailFieldStyle.Render(dueDateStr)
+        if targetTodo.IsOverdue() {
+            s += " " + errorStyle.Render("（期限切れ）")
+        }
+        s += "\n\n"
+    } else {
+        s += emptyStyle.Render("（期限なし）") + "\n\n"
+    }
+
+    // 作成日時・更新日時
+    s += headerStyle.Render(" 作成日時 ") + "\n"
+    s += todoDetailFieldStyle.Render(targetTodo.CreatedAt.Format("2006-01-02 15:04:05")) + "\n\n"
+
+    s += headerStyle.Render(" 更新日時 ") + "\n"
+    s += todoDetailFieldStyle.Render(targetTodo.UpdatedAt.Format("2006-01-02 15:04:05")) + "\n\n"
+
+    // ヘルプテキスト
+    s += "\n" + helpStyle.Render("Escキーでメイン画面に戻る | eキーで編集 | dキーで完了")
 
     return s
 }

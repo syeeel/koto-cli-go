@@ -131,4 +131,9 @@ var (
 	// inputStyle is the style for input field (transparent background)
 	inputStyle = lipgloss.NewStyle().
 		Foreground(fgDefault)
+
+	// todoDetailFieldStyle is the style for todo detail field values (transparent background)
+	todoDetailFieldStyle = lipgloss.NewStyle().
+		Foreground(fgDefault).
+		Padding(0, 2)
 )

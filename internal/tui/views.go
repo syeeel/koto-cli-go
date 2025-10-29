@@ -26,6 +26,8 @@ func (m Model) View() string {
 		return m.renderEditTodoView()
 	case ViewModePomodoro:
 		return m.renderPomodoroView()
+	case ViewModeDetail:
+		return m.renderDetailView()
 	default:
 		return m.renderListView()
 	}
@@ -81,7 +83,7 @@ func (m Model) renderListView() string {
 
 	// Help text
 	s.WriteString("\n")
-	s.WriteString(helpStyle.Render("Commands: /add, /list, /done, /delete, /edit, /pomo, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: /exit or Ctrl+C"))
+	s.WriteString(helpStyle.Render("Commands: /add, /list, /done, /edit, /pomo, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: /exit or Ctrl+C"))
 
 	return s.String()
 }
@@ -128,15 +130,6 @@ func (m Model) renderTodoItem(index int, todo *model.Todo) string {
 	return todoItemStyle.Render(row)
 }
 
-// truncateString truncates a string to maxLength characters (deprecated, use truncateStringByWidth)
-func truncateString(s string, maxLength int) string {
-	runes := []rune(s)
-	if len(runes) <= maxLength {
-		return s
-	}
-	return string(runes[:maxLength-3]) + "..."
-}
-
 // truncateStringByWidth truncates a string based on display width
 // considering that fullwidth characters (Japanese, Chinese, etc.) take 2 cells
 func truncateStringByWidth(s string, maxWidth int) string {
@@ -172,20 +165,6 @@ func padStringToWidth(s string, width int) string {
 	return s + strings.Repeat(" ", padding)
 }
 
-// renderPriority renders the priority indicator
-func (m Model) renderPriority(priority model.Priority) string {
-	switch priority {
-	case model.PriorityHigh:
-		return highPriorityStyle.Render("🔴")
-	case model.PriorityMedium:
-		return mediumPriorityStyle.Render("🟡")
-	case model.PriorityLow:
-		return lowPriorityStyle.Render("🟢")
-	default:
-		return "⚪"
-	}
-}
-
 // renderHelpContent generates the help content for viewport
 func (m Model) renderHelpContent() string {
 	var s strings.Builder
@@ -217,8 +196,7 @@ func (m Model) renderHelpContent() string {
 		{"/list", "List all todos", "/list"},
 		{"/list --status=<pending|completed>", "List by status", "/list --status=pending"},
 		{"", "", ""},
-		{"/done <id>", "Mark todo as completed", "/done 1"},
-		{"/delete <id>", "Delete a todo", "/delete 2"},
+		{"/done <id>", "Delete a todo", "/done 1"},
 		{"/edit <id>", "Edit a todo (interactive)", "/edit 1"},
 		{"", "  → Step 1: Edit title", ""},
 		{"", "  → Step 2: Edit description (optional)", ""},
@@ -789,4 +767,200 @@ func getDigitArt(char rune) [5]string {
 	default:
 		return [5]string{"", "", "", "", ""}
 	}
+}
+
+// renderDetailView renders the todo detail screen
+func (m Model) renderDetailView() string {
+	var s strings.Builder
+
+	// Find the todo to display
+	var targetTodo *model.Todo
+	for _, todo := range m.todos {
+		if todo.ID == m.detailTodoID {
+			targetTodo = todo
+			break
+		}
+	}
+
+	if targetTodo == nil {
+		errorBox := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(accentRed).
+			Padding(1, 2).
+			Width(60).
+			Render(errorStyle.Render("Todo not found"))
+		s.WriteString(errorBox)
+		s.WriteString("\n\n")
+		s.WriteString(helpStyle.Render("Press Esc to return to main view"))
+		return s.String()
+	}
+
+	// Main title
+	s.WriteString(titleStyle.Render(fmt.Sprintf(" 📋 Todo Details #%d ", targetTodo.ID)))
+	s.WriteString("\n\n")
+
+	// Title field box
+	titleLabel := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Title")
+	titleContent := lipgloss.NewStyle().
+		Foreground(fgDefault).
+		Render(targetTodo.Title)
+	titleBoxContent := titleLabel + "\n" + titleContent
+	titleBoxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#585b70")).
+		Padding(1, 2).
+		Width(110)
+	titleBox := titleBoxStyle.Render(titleBoxContent)
+	s.WriteString(titleBox)
+	s.WriteString("\n\n")
+
+	// Description field box (with increased height)
+	descLabel := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Description")
+	var descContent string
+	if targetTodo.Description != "" {
+		descContent = lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render(targetTodo.Description)
+	} else {
+		descContent = emptyStyle.Render("(no description)")
+	}
+	descBoxContent := descLabel + "\n" + descContent
+	descBoxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#585b70")).
+		Padding(2, 2).  // Increased vertical padding
+		Height(8).      // Set explicit height for 3x size
+		Width(110)
+	descBox := descBoxStyle.Render(descBoxContent)
+	s.WriteString(descBox)
+	s.WriteString("\n\n")
+
+	// Status and Priority box (side by side) with title labels above
+	var statusValue string
+	if targetTodo.IsCompleted() {
+		statusValue = lipgloss.NewStyle().
+			Foreground(accentGreen).
+			Render("✓ Completed")
+	} else {
+		statusValue = lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render("Pending")
+	}
+
+	var priorityValue string
+	switch targetTodo.Priority {
+	case model.PriorityHigh:
+		priorityValue = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")).
+			Render("🔴 High")
+	case model.PriorityMedium:
+		priorityValue = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("220")).
+			Render("🟡 Medium")
+	case model.PriorityLow:
+		priorityValue = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("82")).
+			Render("🟢 Low")
+	}
+
+	// Status box
+	statusLabel := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Status")
+	statusBoxContent := statusLabel + "\n" + statusValue
+	statusBoxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#585b70")).
+		Padding(1, 2).
+		Width(54)
+	statusBox := statusBoxStyle.Render(statusBoxContent)
+
+	// Priority box
+	priorityLabel := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Priority")
+	priorityBoxContent := priorityLabel + "\n" + priorityValue
+	priorityBoxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#585b70")).
+		Padding(1, 2).
+		Width(54)
+	priorityBox := priorityBoxStyle.Render(priorityBoxContent)
+
+	// Join boxes horizontally
+	boxRow := lipgloss.JoinHorizontal(lipgloss.Top, statusBox, "  ", priorityBox)
+	s.WriteString(boxRow)
+	s.WriteString("\n\n")
+
+	// Total Work Time and Timestamps (side by side) with title labels above
+	// Work duration content
+	var workValue string
+	if targetTodo.WorkDuration > 0 {
+		hours := targetTodo.WorkDuration / 60
+		minutes := targetTodo.WorkDuration % 60
+		workValue = lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render(fmt.Sprintf("🍅 %dh %dm", hours, minutes))
+	} else {
+		workValue = emptyStyle.Render("(no records)")
+	}
+
+	// Timestamps content
+	createdStr := lipgloss.NewStyle().
+		Foreground(fgDim).
+		Render("Created: ") +
+		lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render(targetTodo.CreatedAt.Format("2006-01-02 15:04:05"))
+	updatedStr := lipgloss.NewStyle().
+		Foreground(fgDim).
+		Render("Updated: ") +
+		lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render(targetTodo.UpdatedAt.Format("2006-01-02 15:04:05"))
+	timestampContent := createdStr + "\n" + updatedStr
+
+	// Work time box
+	workLabel := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Total Work Time")
+	workBoxContent := workLabel + "\n" + workValue
+	workBoxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#585b70")).
+		Padding(1, 2).
+		Width(54)
+	workBox := workBoxStyle.Render(workBoxContent)
+
+	// Timestamps box
+	timestampLabel := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Timestamps")
+	timestampBoxContent := timestampLabel + "\n" + timestampContent
+	timestampBoxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#585b70")).
+		Padding(1, 2).
+		Width(54)
+	timestampBox := timestampBoxStyle.Render(timestampBoxContent)
+
+	// Join boxes horizontally
+	workTimestampBoxRow := lipgloss.JoinHorizontal(lipgloss.Top, workBox, "  ", timestampBox)
+	s.WriteString(workTimestampBoxRow)
+	s.WriteString("\n\n")
+
+	// Help text
+	s.WriteString(helpStyle.Render("Press Esc to return | e to edit | d to delete"))
+
+	return s.String()
 }

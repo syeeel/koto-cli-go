@@ -179,6 +179,52 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		// Handle detail view
+		if m.viewMode == ViewModeDetail {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				return m, tea.Quit
+
+			case "esc":
+				// Return to list view
+				m.viewMode = ViewModeList
+				return m, nil
+
+			case "e":
+				// Switch to edit mode for this todo
+				m.viewMode = ViewModeEditTodo
+				m.editTodoID = m.detailTodoID
+				// Find the todo to pre-fill the form
+				for _, todo := range m.todos {
+					if todo.ID == m.detailTodoID {
+						m.editTodoTitle = todo.Title
+						m.editTodoDescription = todo.Description
+						break
+					}
+				}
+				m.editTodoStep = 0
+				m.input.Placeholder = "Edit todo title..."
+				m.input.SetValue(m.editTodoTitle)
+				m.err = nil
+				return m, nil
+
+			case "d":
+				// Delete todo
+				ctx := context.Background()
+				err := m.service.DeleteTodo(ctx, m.detailTodoID)
+				if err != nil {
+					m.err = err
+					return m, nil
+				}
+				// Return to list view with success message
+				m.viewMode = ViewModeList
+				m.message = fmt.Sprintf("Deleted todo #%d", m.detailTodoID)
+				return m, loadTodos(m.service)
+			}
+			return m, nil
+		}
+
 		// Handle list view keys
 		switch msg.String() {
 		case "ctrl+c":
@@ -282,8 +328,16 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 	m.message = ""
 	m.err = nil
 
-	// If input is empty, do nothing
+	// If input is empty, show detail view of currently focused todo
 	if value == "" {
+		// Check if there are todos and cursor is valid
+		if len(m.todos) > 0 && m.cursor >= 0 && m.cursor < len(m.todos) {
+			// Get the focused todo
+			focusedTodo := m.todos[m.cursor]
+			// Switch to detail view
+			m.viewMode = ViewModeDetail
+			m.detailTodoID = focusedTodo.ID
+		}
 		return m, nil
 	}
 

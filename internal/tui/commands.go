@@ -66,8 +66,6 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
 
 		// Execute command
 		switch command {
-		case "/delete":
-			return handleDeleteCommand(ctx, svc, args)
 		case "/done":
 			return handleDoneCommand(ctx, svc, args)
 		case "/list":
@@ -96,10 +94,10 @@ func loadTodos(svc *service.TodoService) tea.Cmd {
 	}
 }
 
-// handleDeleteCommand handles the /delete command
-func handleDeleteCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
+// handleDoneCommand handles the /done command (deletes the todo)
+func handleDoneCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
 	if len(args) != 1 {
-		return commandExecutedMsg{err: errors.New("usage: /delete <id>")}
+		return commandExecutedMsg{err: errors.New("usage: /done <id>")}
 	}
 
 	id, err := strconv.ParseInt(args[0], 10, 64)
@@ -113,25 +111,6 @@ func handleDeleteCommand(ctx context.Context, svc *service.TodoService, args []s
 	}
 
 	return commandExecutedMsg{message: fmt.Sprintf("Deleted todo #%d", id)}
-}
-
-// handleDoneCommand handles the /done command
-func handleDoneCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
-	if len(args) != 1 {
-		return commandExecutedMsg{err: errors.New("usage: /done <id>")}
-	}
-
-	id, err := strconv.ParseInt(args[0], 10, 64)
-	if err != nil {
-		return commandExecutedMsg{err: errors.New("invalid todo ID")}
-	}
-
-	err = svc.CompleteTodo(ctx, id)
-	if err != nil {
-		return commandExecutedMsg{err: err}
-	}
-
-	return commandExecutedMsg{message: fmt.Sprintf("Marked todo #%d as completed", id)}
 }
 
 // handleListCommand handles the /list command
