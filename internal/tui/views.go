@@ -992,7 +992,7 @@ func (m Model) renderDetailView() string {
 	s.WriteString("\n\n")
 
 	// Help text
-	s.WriteString(helpStyle.Render("Press Enter to return | e to edit | d to done"))
+	s.WriteString(helpStyle.Render("Press Enter to return | e to edit | d to done | p to pomodoro"))
 
 	return s.String()
 }

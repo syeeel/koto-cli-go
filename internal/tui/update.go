@@ -222,6 +222,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.viewMode = ViewModeList
 				m.message = fmt.Sprintf("Deleted todo #%d", m.detailTodoID)
 				return m, loadTodos(m.service)
+
+			case "p":
+				// Start Pomodoro timer for this todo
+				m.viewMode = ViewModePomodoro
+				m.pomoTodoID = m.detailTodoID
+				m.pomoSecondsLeft = 1500 // 25 minutes = 1500 seconds
+				m.pomoRunning = true
+				m.pomoCompleted = false
+				m.err = nil
+				// Start the timer
+				return m, tickPomodoro()
 			}
 			return m, nil
 		}
@@ -427,7 +438,7 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 		// Switch to Pomodoro mode
 		m.viewMode = ViewModePomodoro
 		m.pomoTodoID = todoID
-		m.pomoSecondsLeft = 10 // 25 minutes = 1500 seconds
+		m.pomoSecondsLeft = 1500 // 25 minutes = 1500 seconds
 		m.pomoRunning = true
 		m.err = nil
 
