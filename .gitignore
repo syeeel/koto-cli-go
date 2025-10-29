@@ -37,3 +37,6 @@ build-errors.log
 
 # Claude Code
 .claude/settings.local.json
+
+# ignore images
+/images/

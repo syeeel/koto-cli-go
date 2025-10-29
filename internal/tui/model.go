@@ -45,13 +45,15 @@ type Model struct {
 	// Add todo screen state
 	addTodoTitle       string
 	addTodoDescription string
-	addTodoStep        int // 0: title, 1: description
+	addTodoPriority    model.Priority
+	addTodoStep        int // 0: title, 1: description, 2: priority
 
 	// Edit todo screen state
 	editTodoID          int64
 	editTodoTitle       string
 	editTodoDescription string
-	editTodoStep        int // 0: title, 1: description
+	editTodoPriority    model.Priority
+	editTodoStep        int // 0: title, 1: description, 2: priority
 
 	// Pomodoro timer state
 	pomoTodoID      int64 // ID of todo being worked on (0 if general timer)

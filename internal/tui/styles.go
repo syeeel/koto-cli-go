@@ -44,7 +44,8 @@ var (
 	selectedStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#1e1e2e")).
 		Background(fgSelected).
-		Bold(true)
+		Bold(true).
+		Width(116)
 
 	// todoItemStyle is the style for regular todo items (transparent background)
 	todoItemStyle = lipgloss.NewStyle().

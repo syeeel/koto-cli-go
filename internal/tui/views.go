@@ -46,13 +46,13 @@ func (m Model) renderListView() string {
 		s.WriteString(emptyStyle.Render("  No todos yet. Use /add to create your first todo!  "))
 		s.WriteString("\n")
 	} else {
-		// Header with fixed widths: No.(4), Title(35), Description(35), Total time(10), Create Date(11)
-		headerNo := padStringToWidth("No.", 4)
-		headerTitle := padStringToWidth("Title", 35)
-		headerDesc := padStringToWidth("Description", 35)
-		headerTime := padStringToWidth("Total time", 10)
-		headerDate := padStringToWidth("Create Date", 11)
-		header := fmt.Sprintf(" %s   %s   %s   %s   %s ", headerNo, headerTitle, headerDesc, headerTime, headerDate)
+		// Header with fixed widths: No.(5), Title(60), Priority(12), Total time(12), Create Date(13)
+		headerNo := padStringToWidth("No.", 5)
+		headerTitle := padStringToWidth("Title", 60)
+		headerPriority := padStringToWidth("Priority", 12)
+		headerTime := padStringToWidth("Total time", 12)
+		headerDate := padStringToWidth("Create Date", 13)
+		header := fmt.Sprintf(" %s   %s   %s   %s   %s ", headerNo, headerTitle, headerPriority, headerTime, headerDate)
 		s.WriteString(headerStyle.Render(header))
 		s.WriteString("\n")
 
@@ -90,31 +90,57 @@ func (m Model) renderListView() string {
 
 // renderTodoItem renders a single todo item in table format
 func (m Model) renderTodoItem(index int, todo *model.Todo) string {
-	// No. (ID) - width: 4
+	// No. (ID) - width: 5
 	no := fmt.Sprintf("%d", todo.ID)
-	no = padStringToWidth(no, 4)
+	no = padStringToWidth(no, 5)
 
-	// Title - width: 35 (display width, not character count)
-	title := truncateStringByWidth(todo.Title, 35)
-	title = padStringToWidth(title, 35)
+	// Title - width: 60 (display width, not character count)
+	title := truncateStringByWidth(todo.Title, 60)
+	title = padStringToWidth(title, 60)
 
-	// Description - width: 35 (display width, not character count)
-	desc := truncateStringByWidth(todo.Description, 35)
-	desc = padStringToWidth(desc, 35)
+	// Priority - width: 12 (display width, not character count)
+	// First create the plain text, pad it, then apply styling
+	var priorityText string
+	var priorityColor lipgloss.Color
+	switch todo.Priority {
+	case model.PriorityHigh:
+		priorityText = "High"
+		priorityColor = lipgloss.Color("196")
+	case model.PriorityMedium:
+		priorityText = "Medium"
+		priorityColor = lipgloss.Color("220")
+	case model.PriorityLow:
+		priorityText = "Low"
+		priorityColor = lipgloss.Color("82")
+	}
+	// Pad the plain text first
+	priorityPadded := padStringToWidth(priorityText, 12)
 
-	// Total time - width: 10
+	// For styling, check if this item is selected
+	var priority string
+	if m.cursor == index {
+		// When selected, don't apply color styling (let selectedStyle handle it)
+		priority = priorityPadded
+	} else {
+		// When not selected, apply color styling
+		priority = lipgloss.NewStyle().
+			Foreground(priorityColor).
+			Render(priorityPadded)
+	}
+
+	// Total time - width: 12
 	totalTime := todo.GetWorkDurationFormatted()
 	if totalTime == "" {
 		totalTime = "-"
 	}
-	totalTime = padStringToWidth(totalTime, 10)
+	totalTime = padStringToWidth(totalTime, 12)
 
-	// Create Date (format: YYYY-MM-DD) - width: 11
+	// Create Date (format: YYYY-MM-DD) - width: 13
 	createDate := todo.CreatedAt.Format("2006-01-02")
-	createDate = padStringToWidth(createDate, 11)
+	createDate = padStringToWidth(createDate, 13)
 
 	// Build the row with spacing (no vertical separators for cleaner look)
-	row := fmt.Sprintf(" %s   %s   %s   %s   %s ", no, title, desc, totalTime, createDate)
+	row := fmt.Sprintf(" %s   %s   %s   %s   %s ", no, title, priority, totalTime, createDate)
 
 	// Apply cursor style if selected (neon green text, transparent background)
 	if m.cursor == index {
@@ -192,6 +218,7 @@ func (m Model) renderHelpContent() string {
 		{"/add", "Add a new todo (interactive)", "/add"},
 		{"", "  → Step 1: Enter title", ""},
 		{"", "  → Step 2: Enter description (optional)", ""},
+		{"", "  → Step 3: Select priority (1-3)", ""},
 		{"", "", ""},
 		{"/list", "List all todos", "/list"},
 		{"/list --status=<pending|completed>", "List by status", "/list --status=pending"},
@@ -200,6 +227,7 @@ func (m Model) renderHelpContent() string {
 		{"/edit <id>", "Edit a todo (interactive)", "/edit 1"},
 		{"", "  → Step 1: Edit title", ""},
 		{"", "  → Step 2: Edit description (optional)", ""},
+		{"", "  → Step 3: Select priority (1-3)", ""},
 		{"", "", ""},
 		{"/pomo [id]", "Start a 25-minute Pomodoro timer", "/pomo"},
 		{"", "  → General timer (no task)", "/pomo"},
@@ -376,16 +404,35 @@ func (m Model) renderAddTodoView() string {
 	// Show current step
 	stepIndicator := ""
 	if m.addTodoStep == 0 {
-		stepIndicator = headerStyle.Render(" Step 1/2: Enter Title ")
+		stepIndicator = headerStyle.Render(" Step 1/3: Enter Title ")
+	} else if m.addTodoStep == 1 {
+		stepIndicator = headerStyle.Render(" Step 2/3: Enter Description (Optional) ")
 	} else {
-		stepIndicator = headerStyle.Render(" Step 2/2: Enter Description (Optional) ")
+		stepIndicator = headerStyle.Render(" Step 3/3: Select Priority ")
 	}
 	s.WriteString(stepIndicator)
 	s.WriteString("\n\n")
 
-	// Show previously entered title if on step 2
-	if m.addTodoStep == 1 {
+	// Show previously entered data
+	if m.addTodoStep >= 1 {
 		s.WriteString(messageStyle.Render(fmt.Sprintf("Title: %s", m.addTodoTitle)))
+		s.WriteString("\n\n")
+	}
+	if m.addTodoStep == 2 {
+		if m.addTodoDescription != "" {
+			s.WriteString(messageStyle.Render(fmt.Sprintf("Description: %s", m.addTodoDescription)))
+		} else {
+			s.WriteString(emptyStyle.Render("Description: (none)"))
+		}
+		s.WriteString("\n\n")
+		// Show priority options
+		s.WriteString(lipgloss.NewStyle().Foreground(accentGreen).Render("Priority Options:"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("82")).Render("  1 = Low"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Render("  2 = Medium (default)"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("  3 = High"))
 		s.WriteString("\n\n")
 	}
 
@@ -422,16 +469,35 @@ func (m Model) renderEditTodoView() string {
 	// Show current step
 	stepIndicator := ""
 	if m.editTodoStep == 0 {
-		stepIndicator = headerStyle.Render(" Step 1/2: Edit Title ")
+		stepIndicator = headerStyle.Render(" Step 1/3: Edit Title ")
+	} else if m.editTodoStep == 1 {
+		stepIndicator = headerStyle.Render(" Step 2/3: Edit Description (Optional) ")
 	} else {
-		stepIndicator = headerStyle.Render(" Step 2/2: Edit Description (Optional) ")
+		stepIndicator = headerStyle.Render(" Step 3/3: Select Priority ")
 	}
 	s.WriteString(stepIndicator)
 	s.WriteString("\n\n")
 
-	// Show previously entered title if on step 2
-	if m.editTodoStep == 1 {
+	// Show previously entered data
+	if m.editTodoStep >= 1 {
 		s.WriteString(messageStyle.Render(fmt.Sprintf("Title: %s", m.editTodoTitle)))
+		s.WriteString("\n\n")
+	}
+	if m.editTodoStep == 2 {
+		if m.editTodoDescription != "" {
+			s.WriteString(messageStyle.Render(fmt.Sprintf("Description: %s", m.editTodoDescription)))
+		} else {
+			s.WriteString(emptyStyle.Render("Description: (none)"))
+		}
+		s.WriteString("\n\n")
+		// Show priority options
+		s.WriteString(lipgloss.NewStyle().Foreground(accentGreen).Render("Priority Options:"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("82")).Render("  1 = Low"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Render("  2 = Medium (default)"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("  3 = High"))
 		s.WriteString("\n\n")
 	}
 
@@ -841,66 +907,25 @@ func (m Model) renderDetailView() string {
 	s.WriteString(descBox)
 	s.WriteString("\n\n")
 
-	// Status and Priority box (side by side) with title labels above
-	var statusValue string
-	if targetTodo.IsCompleted() {
-		statusValue = lipgloss.NewStyle().
-			Foreground(accentGreen).
-			Render("✓ Completed")
-	} else {
-		statusValue = lipgloss.NewStyle().
-			Foreground(fgDefault).
-			Render("Pending")
-	}
+	// Priority, Total Work Time, and Timestamps (3 columns in one row)
 
+	// Priority content
 	var priorityValue string
 	switch targetTodo.Priority {
 	case model.PriorityHigh:
 		priorityValue = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("196")).
-			Render("🔴 High")
+			Render("High")
 	case model.PriorityMedium:
 		priorityValue = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("220")).
-			Render("🟡 Medium")
+			Render("Medium")
 	case model.PriorityLow:
 		priorityValue = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("82")).
-			Render("🟢 Low")
+			Render("Low")
 	}
 
-	// Status box
-	statusLabel := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("213")).
-		Bold(true).
-		Render("Status")
-	statusBoxContent := statusLabel + "\n" + statusValue
-	statusBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#585b70")).
-		Padding(1, 2).
-		Width(54)
-	statusBox := statusBoxStyle.Render(statusBoxContent)
-
-	// Priority box
-	priorityLabel := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("213")).
-		Bold(true).
-		Render("Priority")
-	priorityBoxContent := priorityLabel + "\n" + priorityValue
-	priorityBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#585b70")).
-		Padding(1, 2).
-		Width(54)
-	priorityBox := priorityBoxStyle.Render(priorityBoxContent)
-
-	// Join boxes horizontally
-	boxRow := lipgloss.JoinHorizontal(lipgloss.Top, statusBox, "  ", priorityBox)
-	s.WriteString(boxRow)
-	s.WriteString("\n\n")
-
-	// Total Work Time and Timestamps (side by side) with title labels above
 	// Work duration content
 	var workValue string
 	if targetTodo.WorkDuration > 0 {
@@ -920,13 +945,20 @@ func (m Model) renderDetailView() string {
 		lipgloss.NewStyle().
 			Foreground(fgDefault).
 			Render(targetTodo.CreatedAt.Format("2006-01-02 15:04:05"))
-	updatedStr := lipgloss.NewStyle().
-		Foreground(fgDim).
-		Render("Updated: ") +
-		lipgloss.NewStyle().
-			Foreground(fgDefault).
-			Render(targetTodo.UpdatedAt.Format("2006-01-02 15:04:05"))
-	timestampContent := createdStr + "\n" + updatedStr
+	timestampContent := createdStr
+
+	// Priority box
+	priorityLabel := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("213")).
+		Bold(true).
+		Render("Priority")
+	priorityBoxContent := priorityLabel + "\n" + priorityValue
+	priorityBoxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#585b70")).
+		Padding(1, 2).
+		Width(34)
+	priorityBox := priorityBoxStyle.Render(priorityBoxContent)
 
 	// Work time box
 	workLabel := lipgloss.NewStyle().
@@ -938,29 +970,29 @@ func (m Model) renderDetailView() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
-		Width(54)
+		Width(34)
 	workBox := workBoxStyle.Render(workBoxContent)
 
-	// Timestamps box
+	// Created timestamp box
 	timestampLabel := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("213")).
 		Bold(true).
-		Render("Timestamps")
+		Render("Created")
 	timestampBoxContent := timestampLabel + "\n" + timestampContent
 	timestampBoxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
-		Width(54)
+		Width(38)
 	timestampBox := timestampBoxStyle.Render(timestampBoxContent)
 
-	// Join boxes horizontally
-	workTimestampBoxRow := lipgloss.JoinHorizontal(lipgloss.Top, workBox, "  ", timestampBox)
-	s.WriteString(workTimestampBoxRow)
+	// Join three boxes horizontally
+	threeColumnRow := lipgloss.JoinHorizontal(lipgloss.Top, priorityBox, "  ", workBox, "  ", timestampBox)
+	s.WriteString(threeColumnRow)
 	s.WriteString("\n\n")
 
 	// Help text
-	s.WriteString(helpStyle.Render("Press Esc to return | e to edit | d to delete"))
+	s.WriteString(helpStyle.Render("Press Enter to return | e to edit | d to done"))
 
 	return s.String()
 }

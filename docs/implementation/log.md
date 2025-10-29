@@ -4,6 +4,250 @@ This file records the implementation history, technical decisions, issues encoun
 
 ---
 
+## 2025-10-29 (Update 11) - Refine Detail View Layout
+
+### Implementation Details
+
+#### 詳細画面のレイアウト微調整
+- **目的**: TimestampsからUpdatedを削除し、全体の幅を統一
+- **ユーザーフィードバック**: 「TimestampsにあるUpdatedは消してください。また、TitleとDescriptionは同じ幅なんだけど、Priority,Total Work Time, Timestampsの行は上のTitleとDescriptionと異なる幅だよね。これを合わせるようにしてください。」
+
+#### 変更内容
+
+1. **TimestampsからUpdatedを削除**
+   - "Updated:"行を削除
+   - Createdのみ表示
+   - ラベルを"Timestamps"から"Created"に変更
+
+2. **3カラムの幅を調整**
+   - Priority: Width(34)
+   - Total Work Time: Width(34)
+   - Created: Width(38)
+   - スペース: 2 × 2 = 4
+   - **合計: 34 + 2 + 34 + 2 + 38 = 110**
+   - Title/DescriptionのWidth(110)と完全に一致
+
+3. **Height指定を削除**
+   - 各ボックスの高さは内容に応じて自然に決定
+   - よりシンプルな実装
+
+#### レイアウト構成
+
+**変更前:**
+```
+╭──────────────╮  ╭──────────────╮  ╭──────────────╮
+│ Priority     │  │ Total Work   │  │ Timestamps   │
+│ 🟡 Medium    │  │ Time         │  │ Created: ... │
+│              │  │ 🍅 2h 30m    │  │ Updated: ... │
+╰──────────────╯  ╰──────────────╯  ╰──────────────╯
+Width: 35         Width: 35         Width: 36
+```
+
+**変更後:**
+```
+╭────────────────╮  ╭────────────────╮  ╭──────────────────╮
+│ Priority       │  │ Total Work     │  │ Created          │
+│ 🟡 Medium      │  │ Time           │  │ 2025-10-19 ...   │
+╰────────────────╯  ╰────────────────╯  ╰──────────────────╯
+Width: 34           Width: 34           Width: 38
+合計: 34 + 2 + 34 + 2 + 38 = 110 (Title/Descriptionと一致)
+```
+
+### 変更ファイル
+- `internal/tui/views.go` - Timestamp表示の簡略化、幅の調整
+
+### ユーザー体験の改善
+
+1. **情報のシンプル化**
+   - Updated情報は必須ではないため削除
+   - Createdのみで十分
+
+2. **視覚的な統一感**
+   - TitleとDescriptionと同じ幅（110）に統一
+   - より整然としたレイアウト
+
+3. **ラベルの明確化**
+   - "Timestamps"から"Created"に変更
+   - 表示内容が一目でわかる
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ 3カラムの合計幅がTitle/Descriptionと一致
+- ✅ Updatedが削除されCreatedのみ表示
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- 完璧に統一されたレイアウトになった
+
+---
+
+## 2025-10-29 (Update 10) - Optimize Detail View Layout
+
+### Implementation Details
+
+#### 詳細画面のレイアウト最適化
+- **目的**: より効率的でスッキリとしたレイアウトを実現
+- **ユーザーフィードバック**: 「タスクの詳細画面にStatusの表示はいらないな。削除してください。また、Priority, Total Work Time, Timestampsは同じ行になるようにし、それぞれの高さも合わせてください。Timestampsの高さに合わせる形だと良いです。」
+
+#### 変更内容
+
+1. **Statusボックスを削除**
+   - Statusは不要な情報として削除
+   - よりシンプルで焦点を絞ったレイアウト
+
+2. **3カラムレイアウトの採用**
+   - Priority, Total Work Time, Timestampsを1行に配置
+   - スペース効率の向上
+
+3. **高さの統一**
+   - Priority: Height(4)
+   - Total Work Time: Height(4)
+   - Timestamps: 自然な高さ（2行：Created + Updated）
+   - すべてのボックスの高さをTimestampsに合わせる
+
+#### レイアウト構成
+
+**変更前（2行、2+2カラム）:**
+```
+╭─────────────────╮  ╭─────────────────╮
+│ Status          │  │ Priority        │
+╰─────────────────╯  ╰─────────────────╯
+
+╭─────────────────╮  ╭─────────────────╮
+│ Total Work Time │  │ Timestamps      │
+╰─────────────────╯  ╰─────────────────╯
+```
+
+**変更後（1行、3カラム）:**
+```
+╭──────────────╮  ╭──────────────╮  ╭──────────────╮
+│ Priority     │  │ Total Work   │  │ Timestamps   │
+│ 🟡 Medium    │  │ Time         │  │ Created: ... │
+│              │  │ 🍅 2h 30m    │  │ Updated: ... │
+╰──────────────╯  ╰──────────────╯  ╰──────────────╯
+```
+
+#### 技術的な実装
+
+```go
+// 3カラムの幅計算
+// 合計幅: 110
+// スペース: 2 × 2 = 4
+// 各列: 35, 35, 36
+priorityBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(35).
+    Height(4)  // Timestampsの高さに合わせる
+
+workBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(35).
+    Height(4)  // Timestampsの高さに合わせる
+
+timestampBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(36)
+```
+
+### 変更ファイル
+- `internal/tui/views.go` - Statusボックス削除、3カラムレイアウト実装
+
+### ユーザー体験の改善
+
+1. **情報の整理**
+   - 不要な情報（Status）を削除
+   - 重要な情報を1行にまとめて視認性向上
+
+2. **スペース効率**
+   - 2行から1行に削減
+   - 画面のスクロール量が減少
+
+3. **視覚的な統一感**
+   - すべてのボックスの高さが揃っている
+   - より整然としたレイアウト
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ 3カラムが正しく表示される
+- ✅ すべてのボックスの高さが統一されている
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- よりスッキリと効率的なレイアウトになった
+
+---
+
+## 2025-10-29 (Update 9) - Improve Detail View UX
+
+### Implementation Details
+
+#### 詳細画面のユーザー体験を改善
+- **目的**: より直感的で一貫性のある操作感を実現
+- **ユーザーフィードバック**: 「タスクの詳細画面もd to doneに変更してください。また、Escでreturnするのではなく、Enterで戻るように仕様変更してください」
+
+#### 変更内容
+
+1. **ヘルプテキストの変更**
+   - "d to delete" → "d to done"に変更
+   - より一貫性のある表現（コマンド名と一致）
+
+2. **戻るキーの変更**
+   - "Esc to return" → "Enter to return"に変更
+   - update.goで"esc"キーハンドリングを"enter"に変更
+
+#### 実装箇所
+
+- `internal/tui/views.go`:963 - ヘルプテキストを更新
+- `internal/tui/update.go`:189 - "esc" → "enter"に変更
+
+### 変更前後の比較
+
+**変更前:**
+```
+Press Esc to return | e to edit | d to delete
+```
+
+**変更後:**
+```
+Press Enter to return | e to edit | d to done
+```
+
+### ユーザー体験の改善
+
+1. **より直感的な操作**
+   - Enterキーはより自然な「決定/戻る」アクション
+   - Escキーはキャンセル的な意味合いが強く、詳細表示からの戻りには違和感があった
+
+2. **一貫性の向上**
+   - 「d to done」と表示することで、`/done`コマンドとの一貫性が向上
+   - ユーザーが何が起こるかを理解しやすい
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ 詳細画面でEnterキーでメイン画面に戻る
+- ✅ 詳細画面で'd'キーでタスクを削除
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- より直感的で一貫性のあるUIになった
+
+---
+
 ## 2025-10-29 (Update 8) - Unify /done and /delete Commands
 
 ### Implementation Details

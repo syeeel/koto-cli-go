@@ -186,7 +186,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.quitting = true
 				return m, tea.Quit
 
-			case "esc":
+			case "enter":
 				// Return to list view
 				m.viewMode = ViewModeList
 				return m, nil
@@ -200,6 +200,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if todo.ID == m.detailTodoID {
 						m.editTodoTitle = todo.Title
 						m.editTodoDescription = todo.Description
+						m.editTodoPriority = todo.Priority
 						break
 					}
 				}
@@ -381,6 +382,7 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 			m.editTodoID = id
 			m.editTodoTitle = targetTodo.Title
 			m.editTodoDescription = targetTodo.Description
+			m.editTodoPriority = targetTodo.Priority
 			m.editTodoStep = 0
 			m.input.Placeholder = "Edit todo title..."
 			m.input.SetValue(targetTodo.Title)
@@ -455,12 +457,33 @@ func (m *Model) handleAddTodoEnter() (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case 1: // Description input
-		// Save description
+		// Save description and move to priority step
 		m.addTodoDescription = value
+		m.addTodoStep = 2
+		m.input.SetValue("")
+		m.input.Placeholder = "Select priority: 1 (Low), 2 (Medium), 3 (High)..."
+		m.err = nil
+		return m, nil
+
+	case 2: // Priority selection
+		// Parse priority
+		var priority model.Priority
+		switch value {
+		case "1", "l", "L", "low", "Low":
+			priority = model.PriorityLow
+		case "2", "m", "M", "medium", "Medium", "":
+			priority = model.PriorityMedium // Default to Medium
+		case "3", "h", "H", "high", "High":
+			priority = model.PriorityHigh
+		default:
+			m.err = errors.New("invalid priority (use 1, 2, or 3)")
+			return m, nil
+		}
+		m.addTodoPriority = priority
 
 		// Create the todo
 		ctx := context.Background()
-		_, err := m.service.AddTodo(ctx, m.addTodoTitle, m.addTodoDescription, model.PriorityMedium, nil)
+		_, err := m.service.AddTodo(ctx, m.addTodoTitle, m.addTodoDescription, m.addTodoPriority, nil)
 		if err != nil {
 			m.err = err
 			return m, nil
@@ -499,12 +522,33 @@ func (m *Model) handleEditTodoEnter() (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case 1: // Description input
-		// Save description
+		// Save description and move to priority step
 		m.editTodoDescription = value
+		m.editTodoStep = 2
+		m.input.SetValue("")
+		m.input.Placeholder = "Select priority: 1 (Low), 2 (Medium), 3 (High)..."
+		m.err = nil
+		return m, nil
+
+	case 2: // Priority selection
+		// Parse priority
+		var priority model.Priority
+		switch value {
+		case "1", "l", "L", "low", "Low":
+			priority = model.PriorityLow
+		case "2", "m", "M", "medium", "Medium", "":
+			priority = model.PriorityMedium // Default to Medium
+		case "3", "h", "H", "high", "High":
+			priority = model.PriorityHigh
+		default:
+			m.err = errors.New("invalid priority (use 1, 2, or 3)")
+			return m, nil
+		}
+		m.editTodoPriority = priority
 
 		// Update the todo
 		ctx := context.Background()
-		err := m.service.EditTodo(ctx, m.editTodoID, m.editTodoTitle, m.editTodoDescription, model.PriorityMedium, nil)
+		err := m.service.EditTodo(ctx, m.editTodoID, m.editTodoTitle, m.editTodoDescription, m.editTodoPriority, nil)
 		if err != nil {
 			m.err = err
 			return m, nil
