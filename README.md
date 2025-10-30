@@ -34,16 +34,18 @@ curl -sSfL https://raw.githubusercontent.com/syeeel/koto-cli-go/main/install.sh 
 - `~/.local/bin`にインストール
 - PATHの設定方法を案内
 
-### Homebrew（macOS）
+### Homebrew（macOS - 準備中🚧）
 
-macOSユーザーに推奨のインストール方法：
+**現在セットアップ中です。次回リリース（v1.0.1以降）から利用可能になります。**
+
+準備が完了次第、以下のコマンドでインストールできるようになります：
 
 ```bash
 brew tap syeeel/tap
 brew install koto
 ```
 
-**注意**: Homebrew Tapを使用するには、初回リリース後にセットアップが必要です。詳細は [docs/RELEASE.md](docs/RELEASE.md#-homebrew-tap-のセットアップ) を参照してください。
+**それまでは、インストールスクリプト（上記）をご利用ください。**
 
 ### Go install
 
