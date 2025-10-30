@@ -2,6 +2,9 @@ package tui
 
 import "github.com/charmbracelet/lipgloss"
 
+// MinTerminalWidth is the minimum required terminal width
+const MinTerminalWidth = 100
+
 var (
 	// Theme colors (transparent backgrounds)
 	fgDefault   = lipgloss.Color("#cdd6f4") // Light text
@@ -106,3 +109,98 @@ var (
 			Bold(true).
 			Underline(true)
 )
+
+// DynamicWidths holds calculated widths for responsive layout
+type DynamicWidths struct {
+	// Main list view column widths
+	NoCol         int
+	TitleCol      int
+	PriorityCol   int
+	WorkTimeCol   int
+	CreatedCol    int
+	TotalListRow  int
+
+	// Detail view widths
+	DetailBox     int
+	DetailColumn  int
+
+	// Pomodoro view widths
+	PomodoroBox   int
+	ProgressBar   int
+
+	// Edit view widths
+	EditInput     int
+
+	// General
+	ContentWidth  int
+}
+
+// calculateDynamicWidths calculates responsive widths based on terminal width
+func calculateDynamicWidths(termWidth int) DynamicWidths {
+	// Reserve space for margins and borders
+	const (
+		marginBuffer  = 4
+		borderBuffer  = 2
+	)
+
+	contentWidth := termWidth - marginBuffer
+
+	// Main list view - proportional column widths
+	// Format: No(5) | Title(flexible) | Priority(12) | WorkTime(12) | Created(13)
+	fixedColsWidth := 5 + 12 + 12 + 13 + 8 // 8 for spacing between columns
+	titleWidth := contentWidth - fixedColsWidth
+	if titleWidth < 20 {
+		titleWidth = 20 // Minimum title width
+	}
+	totalRowWidth := contentWidth
+
+	// Detail view - use most of terminal width
+	detailBoxWidth := contentWidth - 6
+	if detailBoxWidth < 60 {
+		detailBoxWidth = 60
+	}
+	detailColumnWidth := (contentWidth - 12) / 3
+	if detailColumnWidth < 20 {
+		detailColumnWidth = 20
+	}
+
+	// Pomodoro view - centered content
+	pomodoroBoxWidth := contentWidth - 26
+	if pomodoroBoxWidth < 50 {
+		pomodoroBoxWidth = 50
+	}
+	progressBarWidth := contentWidth - 36
+	if progressBarWidth < 40 {
+		progressBarWidth = 40
+	}
+
+	// Edit view - input width
+	editInputWidth := contentWidth - 16
+	if editInputWidth < 40 {
+		editInputWidth = 40
+	}
+
+	return DynamicWidths{
+		NoCol:         5,
+		TitleCol:      titleWidth,
+		PriorityCol:   12,
+		WorkTimeCol:   12,
+		CreatedCol:    13,
+		TotalListRow:  totalRowWidth,
+		DetailBox:     detailBoxWidth,
+		DetailColumn:  detailColumnWidth,
+		PomodoroBox:   pomodoroBoxWidth,
+		ProgressBar:   progressBarWidth,
+		EditInput:     editInputWidth,
+		ContentWidth:  contentWidth,
+	}
+}
+
+// createResponsiveBoxStyle creates a box style with dynamic width
+func createResponsiveBoxStyle(width int, borderStyle lipgloss.Border, borderColor lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Border(borderStyle).
+		BorderForeground(borderColor).
+		Padding(1, 2).
+		Width(width)
+}

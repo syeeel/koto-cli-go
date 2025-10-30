@@ -4,6 +4,254 @@ This file records the implementation history, technical decisions, issues encoun
 
 ---
 
+## 2025-10-30 (Update 2) - Fix Display Issues in Task List and Pomodoro Screen
+
+### Implementation Details
+
+#### 問題点と修正
+
+**問題1: タスク一覧でフォーカス時に2行表示**
+- **症状**: タスクが選択された際、緑色の背景が2行分表示される
+- **原因**: 選択行のスタイルに `Width(widths.TotalListRow)` を設定していたため、rowの内容（既に適切にパディング済み）に加えて追加の幅が適用され、改行が発生
+- **解決策**: `Width()` 指定を削除。rowは既にpadStringToWidthで適切にフォーマットされているため、追加の幅指定は不要
+
+**問題2: ポモドーロ画面のタスク情報が左寄せ**
+- **症状**: タスクIDとタスク名がボックス内で左寄せになっている
+- **原因**: taskInfoBoxのスタイルに `.Align(lipgloss.Center)` が設定されていなかった
+- **解決策**: infoBoxと同様に `.Align(lipgloss.Center)` を追加
+
+#### 変更内容
+
+**internal/tui/views.go**
+
+1. **renderTodoItem関数** (190-197行目)
+```go
+// Before:
+dynamicSelectedStyle := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("#1e1e2e")).
+    Background(fgSelected).
+    Bold(true).
+    Width(widths.TotalListRow)  // ← この行が問題
+
+// After:
+dynamicSelectedStyle := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("#1e1e2e")).
+    Background(fgSelected).
+    Bold(true)  // Width指定を削除
+```
+
+2. **renderPomodoroView関数** (615-632行目)
+```go
+// Before:
+taskInfoBox := lipgloss.NewStyle().
+    Border(lipgloss.NormalBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(widths.PomodoroBox).
+    // Alignがない
+    Render(...)
+
+// After:
+taskInfoBox := lipgloss.NewStyle().
+    Border(lipgloss.NormalBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(widths.PomodoroBox).
+    Align(lipgloss.Center).  // ← 追加
+    Render(...)
+```
+
+#### テスト結果
+
+```bash
+✅ ビルド成功: go build -o bin/koto ./cmd/koto
+✅ 全テスト通過: 23/23 tests passed
+```
+
+#### 期待される効果
+
+1. **タスク一覧**: 選択行が1行で正しく表示される
+2. **ポモドーロ画面**: タスク情報がボックス内で中央揃え
+
+### Technical Notes
+
+**Lipglossのスタイル適用の順序**
+- `Width()`: コンテンツに幅を適用（パディングを追加）
+- 既にパディング済みのコンテンツに `Width()` を適用すると、予期しない改行が発生
+- `Align()`: ボックス内でのテキストの配置を制御
+
+---
+
+## 2025-10-30 (Update 1) - Implement Responsive Layout for All Screens
+
+### Implementation Details
+
+#### レスポンシブレイアウトの実装
+- **目的**: ターミナル幅に応じて動的にレイアウトを調整し、枠線の表示崩れを修正
+- **問題**: 起動画面、タスク詳細画面、ポモドーロ画面で枠線が途切れて表示される
+- **原因**: 全ての画面でハードコードされた幅を使用しており、ターミナルサイズに対応していなかった
+
+#### 設計方針
+
+**1. 最小ターミナル幅の設定**
+- 100文字を最小幅として設定
+- 100文字未満の場合はエラーメッセージを表示
+
+**2. レイアウト戦略**
+- **起動画面（Banner）**: ASCIIアートとToDoボックスを中央配置（固定サイズ）
+- **メインリスト画面**: カラム幅を動的に計算、タイトルカラムを可変幅に
+- **詳細画面**: 全てのボックスを動的幅に対応、3カラムレイアウトも比例配分
+- **ポモドーロ画面**: プログレスバー、情報ボックスを動的幅に、全てセンタリング
+- **編集画面**: デフォルトの動作で問題なし（特別な修正不要）
+
+#### 実装内容
+
+**1. styles.go - ヘルパー関数と構造体の追加**
+
+```go
+// MinTerminalWidth is the minimum required terminal width
+const MinTerminalWidth = 100
+
+// DynamicWidths holds calculated widths for responsive layout
+type DynamicWidths struct {
+    NoCol         int  // Main list: No column
+    TitleCol      int  // Main list: Title column (flexible)
+    PriorityCol   int  // Main list: Priority column
+    WorkTimeCol   int  // Main list: Work time column
+    CreatedCol    int  // Main list: Created column
+    TotalListRow  int  // Main list: Total row width
+    DetailBox     int  // Detail view: Box width
+    DetailColumn  int  // Detail view: Column width
+    PomodoroBox   int  // Pomodoro: Info box width
+    ProgressBar   int  // Pomodoro: Progress bar width
+    EditInput     int  // Edit view: Input width
+    ContentWidth  int  // General content width
+}
+
+func calculateDynamicWidths(termWidth int) DynamicWidths
+func createResponsiveBoxStyle(width int, borderStyle lipgloss.Border, borderColor lipgloss.Color) lipgloss.Style
+```
+
+**2. views.go - 全画面のレスポンシブ化**
+
+- **最小幅チェック**: `renderMinWidthErrorView()` を追加
+- **Banner画面**: `lipgloss.PlaceHorizontal(m.width, lipgloss.Center, ...)` でセンタリング
+- **メインリスト画面**: `calculateDynamicWidths()` を使用して動的幅を計算
+- **詳細画面**: 全てのボックスに `widths.DetailBox` / `widths.DetailColumn` を適用
+- **ポモドーロ画面**:
+  - `PlaceHorizontal(m.width, ...)` に変更
+  - `renderPinkProgressBar()` にwidthパラメータを追加
+  - 情報ボックスに `widths.PomodoroBox` を適用
+
+#### 修正ファイル
+
+1. **internal/tui/styles.go** (207行)
+   - MinTerminalWidth定数追加
+   - DynamicWidths構造体追加
+   - calculateDynamicWidths関数追加
+   - createResponsiveBoxStyle関数追加
+
+2. **internal/tui/views.go** (~1046行)
+   - renderMinWidthErrorView関数追加
+   - View関数に最小幅チェック追加
+   - renderBannerView: センタリング実装
+   - renderListView: 動的幅計算追加
+   - renderTodoItem: シグネチャ変更（widthsパラメータ追加）
+   - renderDetailView: 全ボックスを動的幅に変更
+   - renderPomodoroView: 全PlaceHorizontalをm.widthに変更
+   - renderPinkProgressBar: widthパラメータ追加
+
+#### 技術的な決定
+
+**1. 幅計算のアルゴリズム**
+- 固定カラム幅の合計を計算
+- タイトルカラムは残りスペースを使用（最小20文字）
+- 各ビューごとに適切なマージンを考慮
+
+**2. 最小幅の設定**
+- 100文字: 現在のレイアウトを快適に表示できる最小幅
+- それ未満では視認性が低下するため、エラー表示
+
+**3. センタリング方法**
+- `lipgloss.PlaceHorizontal(termWidth, lipgloss.Center, content)`
+- 固定サイズのコンテンツ（ASCIIアート等）を中央配置
+
+**4. 動的幅の適用範囲**
+- 選択行のスタイル: 動的に生成（`Width(widths.TotalListRow)`）
+- ボーダーボックス: 全て動的幅に対応
+- プログレスバー: width引数で動的に調整
+
+#### テスト結果
+
+**ビルド**
+```bash
+go build -o bin/koto ./cmd/koto
+# Success - no errors
+```
+
+**テスト**
+```bash
+go test ./internal/tui/... -v
+# PASS - all 23 tests passed
+```
+
+**動作確認**
+```bash
+./bin/koto --version
+# koto version dev - working correctly
+```
+
+#### 期待される効果
+
+1. **枠線の表示崩れが解消**
+   - 全ての画面でボーダーが正しく表示される
+   - ターミナルサイズに応じて適切に調整
+
+2. **ユーザビリティの向上**
+   - 様々なターミナルサイズに対応
+   - 100文字未満では明確なエラーメッセージ
+
+3. **保守性の向上**
+   - 動的幅計算が一元管理される
+   - 将来の変更が容易
+
+#### 残された課題
+
+1. **ウィンドウリサイズの動的対応**
+   - 現在: ウィンドウサイズ変更時に再描画されるが、即座には反映されない可能性
+   - 対応: `tea.WindowSizeMsg`受信時に即座に再描画（update.goで既に実装済み）
+
+2. **極端に広いターミナルでの対応**
+   - 現在: コンテンツがセンタリングされるが、最大幅制限なし
+   - 今後: 必要に応じて最大幅を設定可能
+
+3. **バナーのASCIIアートの動的サイズ調整**
+   - 現在: 固定サイズでセンタリング
+   - 今後: 狭いターミナルでは簡易表示に切り替え可能
+
+#### 学んだこと
+
+1. **Lipglossのレスポンシブ機能**
+   - `PlaceHorizontal`は強力なセンタリングツール
+   - `Width()`は動的値を受け付ける
+   - スタイルは実行時に生成可能
+
+2. **Bubbleteaのウィンドウサイズ管理**
+   - `tea.WindowSizeMsg`は自動的に送信される
+   - `m.width`と`m.height`で最新のサイズを追跡可能
+
+3. **レイアウト計算の重要性**
+   - 一元化された幅計算が保守性を向上
+   - 構造体を使った設計が明確で理解しやすい
+
+### Next Steps
+
+1. 実際のターミナルで様々なサイズでの動作確認
+2. ユーザーフィードバックに基づく微調整
+3. 必要に応じて最大幅制限の実装
+
+---
+
 ## 2025-10-29 (Update 11) - Refine Detail View Layout
 
 ### Implementation Details

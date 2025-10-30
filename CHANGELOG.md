@@ -5,6 +5,30 @@ All notable changes to koto will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2025-10-30
+
+### Added
+- **レスポンシブレイアウト**: ターミナル幅に応じて動的にレイアウトを調整
+- **最小ターミナル幅チェック**: 100文字未満の場合にエラーメッセージを表示
+- **動的幅計算システム**: 全画面の幅を一元管理する`DynamicWidths`構造体を追加
+
+### Fixed
+- **タスク一覧**: フォーカス時に選択行が2行表示される問題を修正
+- **起動画面**: 枠線が途切れる問題を修正（ASCIIアートとToDoボックスを中央配置）
+- **詳細画面**: 枠線が途切れる問題を修正（全ボックスを動的幅に対応）
+- **ポモドーロ画面**: 枠線が途切れる問題を修正（プログレスバー、情報ボックスを動的幅に対応）
+- **ポモドーロ画面**: タスク情報（Task IDとタスク名）を中央表示に変更
+
+### Changed
+- **メインリスト画面**: カラム幅を動的に計算、タイトルカラムを可変幅に変更
+- **詳細画面**: 3カラムレイアウトを比例配分で動的調整
+- **ポモドーロ画面**: 全要素をターミナル幅に応じてセンタリング
+
+### Technical
+- `internal/tui/styles.go`: 動的幅計算関数とヘルパー関数を追加
+- `internal/tui/views.go`: 全画面のレスポンシブ化、最小幅チェック機能を追加
+- Lipglossの`PlaceHorizontal`を活用した中央配置の実装
+
 ## [1.0.3] - 2025-10-30
 
 ### Fixed
@@ -50,19 +74,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `install.sh`: ユーザー向けインストールスクリプト
 
 ---
-
-## リリース前の変更履歴
-
-v1.0.0以前の開発履歴については、[GitHubのコミット履歴](https://github.com/syeeel/koto-cli-go/commits/main)を参照してください。
-
-### 主要機能（v1.0.0時点）
-
-- ✅ インタラクティブなTUI（Bubbletea）
-- ✅ SQLiteによるデータ永続化
-- ✅ 優先度管理（高・中・低）
-- ✅ 期限管理と期限切れ警告
-- ✅ ポモドーロタイマー（25分）
-- ✅ 作業時間の自動記録
-- ✅ JSON形式でのエクスポート/インポート
-- ✅ Vimライクなキーバインド（j/k）
-- ✅ ステータスフィルター（未完了/完了済み）

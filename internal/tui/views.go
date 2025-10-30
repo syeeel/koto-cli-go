@@ -15,6 +15,11 @@ func (m Model) View() string {
 		return "Goodbye!\n"
 	}
 
+	// Check minimum terminal width
+	if m.width < MinTerminalWidth {
+		return m.renderMinWidthErrorView()
+	}
+
 	switch m.viewMode {
 	case ViewModeBanner:
 		return m.renderBannerView()
@@ -33,9 +38,45 @@ func (m Model) View() string {
 	}
 }
 
+// renderMinWidthErrorView displays an error when terminal is too narrow
+func (m Model) renderMinWidthErrorView() string {
+	var s strings.Builder
+
+	errorMsg := fmt.Sprintf(
+		"⚠️  Terminal Too Narrow\n\n"+
+		"Current width: %d characters\n"+
+		"Required width: %d characters\n\n"+
+		"Please resize your terminal window to at least %d characters wide.",
+		m.width,
+		MinTerminalWidth,
+		MinTerminalWidth,
+	)
+
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(accentRed).
+		Padding(2, 4).
+		Foreground(accentRed).
+		Bold(true)
+
+	box := boxStyle.Render(errorMsg)
+
+	// Center the error box
+	if m.width > 0 && m.height > 0 {
+		s.WriteString(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box))
+	} else {
+		s.WriteString(box)
+	}
+
+	return s.String()
+}
+
 // renderListView renders the main todo list view
 func (m Model) renderListView() string {
 	var s strings.Builder
+
+	// Calculate dynamic widths
+	widths := calculateDynamicWidths(m.width)
 
 	// Title with dark background
 	s.WriteString(titleStyle.Render(" 📝 koto - ToDo Manager "))
@@ -46,19 +87,22 @@ func (m Model) renderListView() string {
 		s.WriteString(emptyStyle.Render("  No todos yet. Use /add to create your first todo!  "))
 		s.WriteString("\n")
 	} else {
-		// Header with fixed widths: No.(5), Title(60), Priority(12), Total time(12), Create Date(13)
-		headerNo := padStringToWidth("No.", 5)
-		headerTitle := padStringToWidth("Title", 60)
-		headerPriority := padStringToWidth("Priority", 12)
-		headerTime := padStringToWidth("Total time", 12)
-		headerDate := padStringToWidth("Create Date", 13)
+		// Header with dynamic widths
+		headerNo := padStringToWidth("No.", widths.NoCol)
+		headerTitle := padStringToWidth("Title", widths.TitleCol)
+		headerPriority := padStringToWidth("Priority", widths.PriorityCol)
+		headerTime := padStringToWidth("Total time", widths.WorkTimeCol)
+		headerDate := padStringToWidth("Create Date", widths.CreatedCol)
 		header := fmt.Sprintf(" %s   %s   %s   %s   %s ", headerNo, headerTitle, headerPriority, headerTime, headerDate)
-		s.WriteString(headerStyle.Render(header))
+
+		// Apply header style with dynamic width
+		headerWithStyle := headerStyle.Render(header)
+		s.WriteString(headerWithStyle)
 		s.WriteString("\n")
 
 		// Todo items (no separator lines between items for cleaner look)
 		for i, todo := range m.todos {
-			s.WriteString(m.renderTodoItem(i, todo))
+			s.WriteString(m.renderTodoItem(i, todo, widths))
 			s.WriteString("\n")
 		}
 	}
@@ -89,16 +133,16 @@ func (m Model) renderListView() string {
 }
 
 // renderTodoItem renders a single todo item in table format
-func (m Model) renderTodoItem(index int, todo *model.Todo) string {
-	// No. (ID) - width: 5
+func (m Model) renderTodoItem(index int, todo *model.Todo, widths DynamicWidths) string {
+	// No. (ID) - dynamic width
 	no := fmt.Sprintf("%d", todo.ID)
-	no = padStringToWidth(no, 5)
+	no = padStringToWidth(no, widths.NoCol)
 
-	// Title - width: 60 (display width, not character count)
-	title := truncateStringByWidth(todo.Title, 60)
-	title = padStringToWidth(title, 60)
+	// Title - dynamic width
+	title := truncateStringByWidth(todo.Title, widths.TitleCol)
+	title = padStringToWidth(title, widths.TitleCol)
 
-	// Priority - width: 12 (display width, not character count)
+	// Priority - dynamic width
 	// First create the plain text, pad it, then apply styling
 	var priorityText string
 	var priorityColor lipgloss.Color
@@ -114,7 +158,7 @@ func (m Model) renderTodoItem(index int, todo *model.Todo) string {
 		priorityColor = lipgloss.Color("82")
 	}
 	// Pad the plain text first
-	priorityPadded := padStringToWidth(priorityText, 12)
+	priorityPadded := padStringToWidth(priorityText, widths.PriorityCol)
 
 	// For styling, check if this item is selected
 	var priority string
@@ -128,23 +172,28 @@ func (m Model) renderTodoItem(index int, todo *model.Todo) string {
 			Render(priorityPadded)
 	}
 
-	// Total time - width: 12
+	// Total time - dynamic width
 	totalTime := todo.GetWorkDurationFormatted()
 	if totalTime == "" {
 		totalTime = "-"
 	}
-	totalTime = padStringToWidth(totalTime, 12)
+	totalTime = padStringToWidth(totalTime, widths.WorkTimeCol)
 
-	// Create Date (format: YYYY-MM-DD) - width: 13
+	// Create Date (format: YYYY-MM-DD) - dynamic width
 	createDate := todo.CreatedAt.Format("2006-01-02")
-	createDate = padStringToWidth(createDate, 13)
+	createDate = padStringToWidth(createDate, widths.CreatedCol)
 
 	// Build the row with spacing (no vertical separators for cleaner look)
 	row := fmt.Sprintf(" %s   %s   %s   %s   %s ", no, title, priority, totalTime, createDate)
 
 	// Apply cursor style if selected (neon green text, transparent background)
 	if m.cursor == index {
-		return selectedStyle.Render(row)
+		// Create dynamic selected style (no Width needed as row is already properly padded)
+		dynamicSelectedStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#1e1e2e")).
+			Background(fgSelected).
+			Bold(true)
+		return dynamicSelectedStyle.Render(row)
 	}
 
 	// Apply completed style if todo is completed
@@ -301,41 +350,37 @@ func (m Model) renderHelpView() string {
 
 // renderBannerView renders the startup banner screen
 func (m Model) renderBannerView() string {
-	// Left column: Banner
-	var leftCol strings.Builder
-	leftCol.WriteString("\n\n")
+	var s strings.Builder
 
 	// Render the ASCII art banner
 	banner := GetBanner()
-	leftCol.WriteString(bannerStyle.Render(banner))
-	leftCol.WriteString("\n\n")
+	bannerRendered := bannerStyle.Render(banner)
+	// Center the banner
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, bannerRendered))
+	s.WriteString("\n\n")
 
 	// Render subtitle
 	subtitle := GetSubtitle()
-	leftCol.WriteString(bannerSubtitleStyle.Render(subtitle))
-	leftCol.WriteString("\n\n")
+	subtitleRendered := bannerSubtitleStyle.Render(subtitle)
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, subtitleRendered))
+	s.WriteString("\n\n")
 
 	// Render version
 	version := GetVersion()
-	leftCol.WriteString(bannerVersionStyle.Render(version))
-	leftCol.WriteString("\n")
+	versionRendered := bannerVersionStyle.Render(version)
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, versionRendered))
+	s.WriteString("\n\n")
+
+	// Render todo box (centered)
+	todoBox := m.renderBannerTodoBox()
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, todoBox))
+	s.WriteString("\n")
 
 	// Render "press any key" prompt
-	leftCol.WriteString(bannerPromptStyle.Render("Press any key to continue..."))
+	prompt := bannerPromptStyle.Render("Press any key to continue...")
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, prompt))
 
-	// Right column: Recent Todos
-	rightCol := m.renderBannerTodoBox()
-
-	// Join columns horizontally with spacing
-	content := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		leftCol.String(),
-		strings.Repeat(" ", 4), // spacing between columns
-		rightCol,
-	)
-
-	// Add top padding
-	return "\n\n" + content
+	return s.String()
 }
 
 // renderBannerTodoBox renders the todo list box on the banner screen
@@ -529,6 +574,9 @@ func (m Model) renderEditTodoView() string {
 func (m Model) renderPomodoroView() string {
 	var s strings.Builder
 
+	// Calculate dynamic widths
+	widths := calculateDynamicWidths(m.width)
+
 	// Title with tomato emoji
 	s.WriteString(titleStyle.Render(" 🍅 Pomodoro Timer "))
 	s.WriteString("\n\n")
@@ -544,12 +592,12 @@ func (m Model) renderPomodoroView() string {
 
 	// Render large timer numbers with pink gradient
 	largeTimer := m.renderLargeTimer(minutes, seconds)
-	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, largeTimer))
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, largeTimer))
 	s.WriteString("\n\n")
 
 	// Progress bar with pink gradient
-	progressView := m.renderPinkProgressBar(progressPercent)
-	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, progressView))
+	progressView := m.renderPinkProgressBar(progressPercent, widths.ProgressBar)
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, progressView))
 	s.WriteString("\n\n")
 
 	// Show which todo is being worked on
@@ -568,7 +616,8 @@ func (m Model) renderPomodoroView() string {
 				Border(lipgloss.NormalBorder()).
 				BorderForeground(lipgloss.Color("#585b70")).
 				Padding(1, 2).
-				Width(70).
+				Width(widths.PomodoroBox).
+				Align(lipgloss.Center).
 				Render(
 					lipgloss.NewStyle().
 						Foreground(lipgloss.Color("213")).
@@ -579,7 +628,7 @@ func (m Model) renderPomodoroView() string {
 							Foreground(fgDefault).
 							Render(todoTitle),
 				)
-			s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, taskInfoBox))
+			s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, taskInfoBox))
 			s.WriteString("\n\n")
 		}
 	} else {
@@ -587,7 +636,7 @@ func (m Model) renderPomodoroView() string {
 			Border(lipgloss.NormalBorder()).
 			BorderForeground(lipgloss.Color("#585b70")).
 			Padding(1, 2).
-			Width(70).
+			Width(widths.PomodoroBox).
 			Align(lipgloss.Center).
 			Render(
 				lipgloss.NewStyle().
@@ -595,7 +644,7 @@ func (m Model) renderPomodoroView() string {
 					Italic(true).
 					Render("General Pomodoro session"),
 			)
-		s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, infoBox))
+		s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, infoBox))
 		s.WriteString("\n\n")
 	}
 
@@ -617,7 +666,7 @@ func (m Model) renderPomodoroView() string {
 			Foreground(fgDim).
 			Render("Timer paused")
 	}
-	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, statusText))
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, statusText))
 	s.WriteString("\n\n")
 
 	// Help text in a subtle box
@@ -625,7 +674,7 @@ func (m Model) renderPomodoroView() string {
 		Foreground(fgDim).
 		Italic(true).
 		Render("Press Esc or Enter to stop timer")
-	s.WriteString(lipgloss.PlaceHorizontal(100, lipgloss.Center, helpBox))
+	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, helpBox))
 
 	return s.String()
 }
@@ -687,8 +736,7 @@ func interpolateColor(startR, startG, startB, endR, endG, endB int, ratio float6
 }
 
 // renderPinkProgressBar renders a beautiful progress bar with smooth 3-color gradient (pink→blue→green)
-func (m Model) renderPinkProgressBar(percent float64) string {
-	width := 60
+func (m Model) renderPinkProgressBar(percent float64, width int) string {
 	filled := int(percent * float64(width))
 
 	// Three-color gradient: Pink → Blue → Green
@@ -841,6 +889,9 @@ func getDigitArt(char rune) [5]string {
 func (m Model) renderDetailView() string {
 	var s strings.Builder
 
+	// Calculate dynamic widths
+	widths := calculateDynamicWidths(m.width)
+
 	// Find the todo to display
 	var targetTodo *model.Todo
 	for _, todo := range m.todos {
@@ -855,7 +906,7 @@ func (m Model) renderDetailView() string {
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(accentRed).
 			Padding(1, 2).
-			Width(60).
+			Width(widths.DetailBox).
 			Render(errorStyle.Render("Todo not found"))
 		s.WriteString(errorBox)
 		s.WriteString("\n\n")
@@ -880,7 +931,7 @@ func (m Model) renderDetailView() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
-		Width(110)
+		Width(widths.DetailBox)
 	titleBox := titleBoxStyle.Render(titleBoxContent)
 	s.WriteString(titleBox)
 	s.WriteString("\n\n")
@@ -904,7 +955,7 @@ func (m Model) renderDetailView() string {
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(2, 2).  // Increased vertical padding
 		Height(8).      // Set explicit height for 3x size
-		Width(110)
+		Width(widths.DetailBox)
 	descBox := descBoxStyle.Render(descBoxContent)
 	s.WriteString(descBox)
 	s.WriteString("\n\n")
@@ -959,7 +1010,7 @@ func (m Model) renderDetailView() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
-		Width(34)
+		Width(widths.DetailColumn)
 	priorityBox := priorityBoxStyle.Render(priorityBoxContent)
 
 	// Work time box
@@ -972,7 +1023,7 @@ func (m Model) renderDetailView() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
-		Width(34)
+		Width(widths.DetailColumn)
 	workBox := workBoxStyle.Render(workBoxContent)
 
 	// Created timestamp box
@@ -985,7 +1036,7 @@ func (m Model) renderDetailView() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
-		Width(38)
+		Width(widths.DetailColumn)
 	timestampBox := timestampBoxStyle.Render(timestampBoxContent)
 
 	// Join three boxes horizontally

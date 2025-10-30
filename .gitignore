@@ -43,3 +43,9 @@ build-errors.log
 
 # GoReleaser build artifacts
 dist/
+
+# debug files
+/debug/
+
+# setting.local.json
+.claude/settings.local.json

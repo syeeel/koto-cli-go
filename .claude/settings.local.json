@@ -32,7 +32,9 @@
       "Bash(goreleaser build:*)",
       "Bash(goreleaser check:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": [],
     "ask": []
