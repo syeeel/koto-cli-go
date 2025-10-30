@@ -32,8 +32,8 @@ tmp/
 build-errors.log
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
 
 # ignore images
 /images/
@@ -44,7 +44,9 @@ dist/
 # debug files
 /debug/
 
-# Claude Code settings
+# Claude Code settings and plugins
 .claude/
 .claude-plugin/
+plugins/
+examples/
 
