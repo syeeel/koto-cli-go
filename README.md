@@ -1,5 +1,8 @@
 # koto - ToDo Management CLI
 
+![koto CLI Screenshot](docs/images/koto-cli.png)
+
+
 **koto** (meaning "thing" or "matter" in Japanese) is an interactive ToDo management CLI tool developed in Go.
 It provides a comfortable task management experience with a beautiful terminal UI using the [Bubbletea](https://github.com/charmbracelet/bubbletea) framework.
 
@@ -161,6 +164,8 @@ Once started, an interactive TUI will be displayed.
 - An alarm sounds after 25 minutes
 - If a task ID is specified, work time is automatically recorded
 - Press `Esc` to cancel the timer and return to the main screen
+
+![koto CLI Screenshot](docs/images/pomodoro.png)
 
 ### ⌨️ Keyboard Shortcuts
 
