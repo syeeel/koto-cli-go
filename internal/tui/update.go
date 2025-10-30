@@ -320,8 +320,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case pomodoroAlertTickMsg:
 		// Only process alert ticks if timer is completed and in Pomodoro view
 		if m.pomoCompleted && m.viewMode == ViewModePomodoro {
-			// Play beep sound (ignore errors)
-			_ = beeep.Beep(beeep.DefaultFreq, beeep.DefaultDuration)
+			// Play beep sound (880Hz, 500ms) - high and long
+			_ = beeep.Beep(880.0, 500)
 			// Continue alert ticking
 			return m, tickPomodoroAlert()
 		}

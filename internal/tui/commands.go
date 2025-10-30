@@ -213,9 +213,9 @@ func completePomodoroWithRecording(svc *service.TodoService, todoID int64) tea.C
 			}
 		}
 
-		// Play beep sound (440Hz, 200ms)
+		// Play beep sound (880Hz, 500ms) - high and long
 		// Ignore errors - beep failure should not break the app
-		_ = beeep.Beep(beeep.DefaultFreq, beeep.DefaultDuration)
+		_ = beeep.Beep(880.0, 500)
 
 		return pomodoroCompleteMsg{todoID: todoID}
 	}
