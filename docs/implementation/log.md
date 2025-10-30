@@ -4,6 +4,101 @@ This file records the implementation history, technical decisions, issues encoun
 
 ---
 
+## 2025-10-30 (Update 4) - Implement Dynamic Version Information System
+
+### Implementation Details
+
+#### バージョン情報の動的管理の実装
+
+**目的**: ビルド時にバージョン情報を自動的に注入し、常に最新のバージョン情報を表示
+
+**問題**:
+- バージョン情報がハードコード（`v1.0.0`）されていた
+- コミットハッシュやビルド日時が表示されなかった
+- リリース時に手動で更新する必要があった
+
+**解決策**: Go の`-ldflags`を使用したビルド時の変数注入
+
+#### 実装内容
+
+**1. internal/tui/banner.go**
+```go
+// Version information (set via ldflags during build)
+var (
+    Version   = "dev"      // Version number
+    CommitSHA = "none"     // Git commit SHA
+    BuildDate = "unknown"  // Build date
+)
+
+func GetVersion() string {
+    return fmt.Sprintf("koto version %s\n  commit: %s\n  built:  %s",
+        Version, CommitSHA, BuildDate)
+}
+```
+
+**2. cmd/koto/main.go**
+- mainパッケージにバージョン変数を保持
+- 起動時にtui.bannerの変数に値を設定
+
+**3. Makefile作成**
+開発時のビルドでもバージョン情報を設定
+```makefile
+VERSION ?= dev
+COMMIT := $(shell git rev-parse --short HEAD)
+DATE := $(shell date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+LDFLAGS := -ldflags "\
+    -X 'main.version=$(VERSION)' \
+    -X 'main.commit=$(COMMIT)' \
+    -X 'main.date=$(DATE)'"
+```
+
+#### 使用方法
+
+**開発時のビルド**:
+```bash
+make build              # devバージョンでビルド
+make build VERSION=1.0.5  # 特定バージョンでビルド
+./bin/koto --version    # バージョン確認
+```
+
+**出力例**:
+```
+koto version dev
+  commit: bcc8f45
+  built:  2025-10-30 11:07:28 UTC
+```
+
+#### テスト結果
+
+```bash
+✅ ビルド成功: make build
+✅ 全テストパス: 23/23 tests
+✅ バージョン情報正しく表示
+```
+
+#### メリット
+
+1. **自動化**: ビルド時に自動でバージョン情報が注入
+2. **トレーサビリティ**: コミットハッシュで特定のコードを追跡
+3. **デバッグの効率化**: ビルド日時でバージョンを即座に判別
+4. **保守性**: 手動更新が不要
+
+#### Makefileターゲット
+
+```bash
+make build          # ビルド
+make test           # テスト
+make clean          # クリーンアップ
+make install        # インストール
+make run            # ビルドして実行
+make release        # リリース（GoReleaser）
+make version        # バージョン情報表示
+make help           # ヘルプ
+```
+
+---
+
 ## 2025-10-30 (Update 3) - Replace Unicode Borders with ASCII for Cross-Terminal Compatibility
 
 ### Implementation Details

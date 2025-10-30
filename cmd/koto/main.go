@@ -19,6 +19,11 @@ var (
 )
 
 func main() {
+	// Set version information for TUI
+	tui.Version = version
+	tui.CommitSHA = commit
+	tui.BuildDate = date
+
 	// Handle version flag
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Printf("koto version %s\n", version)

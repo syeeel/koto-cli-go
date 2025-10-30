@@ -1,5 +1,14 @@
 package tui
 
+import "fmt"
+
+// Version information (set via ldflags during build)
+var (
+	Version   = "dev"      // Version number
+	CommitSHA = "none"     // Git commit SHA
+	BuildDate = "unknown"  // Build date
+)
+
 // GetBanner returns the KOTO CLI ASCII art banner
 func GetBanner() string {
 	return `
@@ -19,5 +28,5 @@ func GetSubtitle() string {
 
 // GetVersion returns the version string
 func GetVersion() string {
-	return "v1.0.0"
+	return fmt.Sprintf("koto version %s\n  commit: %s\n  built:  %s", Version, CommitSHA, BuildDate)
 }

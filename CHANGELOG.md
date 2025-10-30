@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **最小ターミナル幅チェック**: 100文字未満の場合にエラーメッセージを表示
 - **動的幅計算システム**: 全画面の幅を一元管理する`DynamicWidths`構造体を追加
 - **クロスターミナル互換ASCIIボーダー**: シンプルなASCII文字（+, -, |）を使用したカスタムボーダー
+- **動的バージョン情報システム**: ビルド時に自動的にバージョン、コミットハッシュ、ビルド日時を注入
+- **Makefile**: 開発時のビルドを効率化する包括的なMakefileを追加（build, test, clean, install, run, release等）
 
 ### Fixed
 - **タスク一覧**: フォーカス時に選択行が2行表示される問題を修正
@@ -19,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **詳細画面**: 枠線が途切れる問題を修正（全ボックスを動的幅に対応）
 - **ポモドーロ画面**: 枠線が途切れる問題を修正（プログレスバー、情報ボックスを動的幅に対応）
 - **ポモドーロ画面**: タスク情報（Task IDとタスク名）を中央表示に変更
+- **ポモドーロ画面**: プログレスバーを中央表示に改善
 - **macOS Terminal互換性**: Unicode box-drawing charactersをASCII文字に置き換え、全てのターミナルで正しく表示されるように修正
 
 ### Changed
@@ -26,12 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **詳細画面**: 3カラムレイアウトを比例配分で動的調整
 - **ポモドーロ画面**: 全要素をターミナル幅に応じてセンタリング
 - **ボーダースタイル**: RoundedBorder/NormalBorderから互換性の高いASCIIボーダーに変更
+- **バージョン表示**: 起動画面とコマンドラインで詳細なバージョン情報（コミット、ビルド日時）を表示
 
 ### Technical
 - `internal/tui/styles.go`: 動的幅計算関数とヘルパー関数を追加、ASCIIボーダー定義を追加
-- `internal/tui/views.go`: 全画面のレスポンシブ化、最小幅チェック機能を追加、全ボーダーをASCIIに置換
+- `internal/tui/views.go`: 全画面のレスポンシブ化、最小幅チェック機能を追加、全ボーダーをASCIIに置換、プログレスバー中央表示改善
+- `internal/tui/banner.go`: バージョン情報変数をエクスポート、`GetVersion()`を詳細表示に変更
+- `cmd/koto/main.go`: TUIパッケージにバージョン情報を注入
+- `Makefile`: ビルド時にldflagsでバージョン情報を設定、各種開発タスクを自動化
 - Lipglossの`PlaceHorizontal`を活用した中央配置の実装
 - 全てのUnicode box-drawing charactersをASCII文字に置換してクロスターミナル互換性を向上
+- GoReleaserとの統合により、リリースビルドで自動的にバージョン情報が注入される
 
 ## [1.0.3] - 2025-10-30
 

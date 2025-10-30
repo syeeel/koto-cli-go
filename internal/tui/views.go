@@ -595,9 +595,14 @@ func (m Model) renderPomodoroView() string {
 	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, largeTimer))
 	s.WriteString("\n\n")
 
-	// Progress bar with pink gradient
+	// Progress bar with pink gradient (centered)
 	progressView := m.renderPinkProgressBar(progressPercent, widths.ProgressBar)
-	s.WriteString(lipgloss.PlaceHorizontal(m.width, lipgloss.Center, progressView))
+	// Wrap in a centered container for better visual alignment
+	centeredProgress := lipgloss.NewStyle().
+		Width(m.width).
+		Align(lipgloss.Center).
+		Render(progressView)
+	s.WriteString(centeredProgress)
 	s.WriteString("\n\n")
 
 	// Show which todo is being worked on
