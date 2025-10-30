@@ -20,15 +20,49 @@
 
 ## 📦 インストール
 
-### バイナリのダウンロード（推奨）
+### インストールスクリプト（推奨・macOS/Linux）
+
+最も簡単な方法：
 
 ```bash
-# Go環境がある場合
-go install github.com/syeeel/koto-cli-go/cmd/koto@latest
-
-# ビルド済みバイナリを使用する場合
-# リリースページからダウンロードして、PATHに配置
+curl -sSfL https://raw.githubusercontent.com/syeeel/koto-cli-go/main/install.sh | sh
 ```
+
+このスクリプトは：
+- 最新バージョンを自動検出
+- お使いのOS/アーキテクチャに合わせてダウンロード
+- `~/.local/bin`にインストール
+- PATHの設定方法を案内
+
+### Homebrew（macOS）
+
+macOSユーザーに推奨のインストール方法：
+
+```bash
+brew tap syeeel/tap
+brew install koto
+```
+
+**注意**: Homebrew Tapを使用するには、初回リリース後にセットアップが必要です。詳細は [docs/RELEASE.md](docs/RELEASE.md#-homebrew-tap-のセットアップ) を参照してください。
+
+### Go install
+
+Go環境がある場合：
+
+```bash
+go install github.com/syeeel/koto-cli-go/cmd/koto@latest
+```
+
+### ビルド済みバイナリ
+
+[Releases](https://github.com/syeeel/koto-cli-go/releases/latest)ページから、お使いのプラットフォーム向けのバイナリをダウンロードできます。
+
+対応プラットフォーム：
+- **macOS**: darwin_amd64 (Intel), darwin_arm64 (Apple Silicon)
+- **Linux**: linux_amd64, linux_arm64
+- **Windows**: windows_amd64
+
+ダウンロード後、解凍してPATHの通った場所に配置してください。
 
 ### ソースからビルド
 

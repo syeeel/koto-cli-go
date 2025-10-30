@@ -40,3 +40,6 @@ build-errors.log
 
 # ignore images
 /images/
+
+# GoReleaser build artifacts
+dist/

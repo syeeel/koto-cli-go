@@ -1,0 +1,105 @@
+# GoReleaser configuration for koto CLI
+# Learn more at: https://goreleaser.com
+
+# GoReleaser version
+version: 2
+
+# Hooks executed before build
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+# Build configuration
+builds:
+  - id: koto
+    main: ./cmd/koto
+    binary: koto
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Ignore Windows ARM64 builds
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+# Archive configuration
+archives:
+  - id: koto
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - LICENSE.md
+      - README.md
+    format_overrides:
+      - goos: windows
+        format: zip
+
+# Checksum configuration
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+# Changelog configuration
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+# Homebrew Tap configuration
+brews:
+  - repository:
+      owner: syeeel
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/syeeel/koto-cli-go"
+    description: "Interactive ToDo management CLI tool with beautiful TUI"
+    license: "MIT"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+
+# Release configuration
+release:
+  github:
+    owner: syeeel
+    name: koto-cli-go
+  name_template: "v{{.Version}}"
+  draft: false
+  prerelease: auto
+
+# Snapshots configuration
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"

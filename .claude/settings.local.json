@@ -25,7 +25,11 @@
       "Bash(ping:*)",
       "Read(//etc/**)",
       "Bash(go clean:*)",
-      "Bash(golangci-lint run:*)"
+      "Bash(golangci-lint run:*)",
+      "Bash(chmod:*)",
+      "Bash(go install:*)",
+      "Bash(./bin/koto:*)",
+      "Bash(goreleaser build:*)"
     ],
     "deny": [],
     "ask": []

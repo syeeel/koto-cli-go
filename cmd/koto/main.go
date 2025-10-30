@@ -11,7 +11,21 @@ import (
 	"github.com/syeeel/koto-cli-go/internal/tui"
 )
 
+// Version information (set by GoReleaser via ldflags)
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
+	// Handle version flag
+	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
+		fmt.Printf("koto version %s\n", version)
+		fmt.Printf("  commit: %s\n", commit)
+		fmt.Printf("  built:  %s\n", date)
+		return
+	}
 	// Get configuration
 	cfg, err := config.GetDefaultConfig()
 	if err != nil {
