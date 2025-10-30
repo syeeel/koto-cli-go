@@ -76,8 +76,10 @@ fi
 print_success "Latest version: ${VERSION}"
 
 # Construct download URL
-# Format: koto_v1.0.0_darwin_amd64.tar.gz
-ARCHIVE_NAME="${BINARY_NAME}_${VERSION}_${OS}_${ARCH}.tar.gz"
+# Format: koto-cli-go_1.0.2_darwin_arm64.tar.gz (note: version without 'v' prefix)
+PROJECT_NAME="koto-cli-go"
+VERSION_WITHOUT_V="${VERSION#v}"  # Remove 'v' prefix from version
+ARCHIVE_NAME="${PROJECT_NAME}_${VERSION_WITHOUT_V}_${OS}_${ARCH}.tar.gz"
 DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/${ARCHIVE_NAME}"
 
 echo ""
