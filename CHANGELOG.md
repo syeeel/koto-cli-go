@@ -5,6 +5,15 @@ All notable changes to koto will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2025-10-30
+
+### Changed
+- **バージョン表示形式**: 「Version: 1.0.7」のようなシンプルで読みやすい形式に変更
+- **Makefile**: CHANGELOGから自動的に最新バージョン番号を抽出するように改善
+
+### Fixed
+- **バージョン情報**: 「dev」と表示されていた問題を修正、正しいバージョン番号を表示
+
 ## [1.0.6] - 2025-10-30
 
 ### Added

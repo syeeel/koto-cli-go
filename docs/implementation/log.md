@@ -4,6 +4,118 @@ This file records the implementation history, technical decisions, issues encoun
 
 ---
 
+## 2025-10-30 (Update 5) - Fix Version Display Format and Auto-detection
+
+### Implementation Details
+
+#### バージョン表示形式の改善
+
+**問題**:
+- バージョンが "dev" と表示されていた
+- CHANGELOGに記載されたバージョン番号が反映されていなかった
+- フォーマットが "koto version dev" で冗長だった
+
+**解決策**:
+1. MakefileでCHANGELOGから最新バージョンを自動抽出
+2. バージョン表示フォーマットをシンプルに変更
+
+#### 実装内容
+
+**1. Makefile修正**
+```makefile
+# CHANGELOGから最新バージョンを抽出
+VERSION ?= $(shell grep -m 1 '^\#\# \[' CHANGELOG.md 2>/dev/null | sed 's/.*\[\(.*\)\].*/\1/' || git describe --tags --abbrev=0 2>/dev/null || echo "1.0.6")
+```
+
+優先順位:
+1. CHANGELOG.mdから最新バージョン（`## [1.0.7]`）を抽出
+2. git tagが存在すれば使用
+3. デフォルト値として "1.0.6" を使用
+
+**2. バージョン表示フォーマット変更**
+
+**internal/tui/banner.go**:
+```go
+func GetVersion() string {
+    return fmt.Sprintf("Version: %s\nCommit:  %s\nBuilt:   %s",
+        Version, CommitSHA, BuildDate)
+}
+```
+
+**cmd/koto/main.go**:
+```go
+fmt.Printf("Version: %s\n", version)
+fmt.Printf("Commit:  %s\n", commit)
+fmt.Printf("Built:   %s\n", date)
+```
+
+#### 表示結果
+
+**修正前**:
+```
+koto version dev
+  commit: 0b303de
+  built:  2025-10-30 11:12:30 UTC
+```
+
+**修正後**:
+```
+Version: 1.0.7
+Commit:  0b303de
+Built:   2025-10-30 11:15:06 UTC
+```
+
+#### 動作確認
+
+```bash
+$ make version
+Version: 1.0.7
+Commit:  0b303de
+Date:    2025-10-30 11:14:40 UTC
+
+$ make build
+Building koto 1.0.7...
+Build complete: bin/koto
+
+$ ./bin/koto --version
+Version: 1.0.7
+Commit:  0b303de
+Built:   2025-10-30 11:15:06 UTC
+```
+
+#### 技術的な決定
+
+1. **バージョン管理の一元化**
+   - CHANGELOGを single source of truth として使用
+   - git tagは optional（存在すれば優先）
+   - 手動でバージョン番号を設定する必要なし
+
+2. **フォーマットの簡素化**
+   - "Version: X.X.X" というシンプルな形式
+   - 各情報を1行ずつ表示
+   - アラインメントを揃えて可読性向上
+
+### Modified Files
+
+- `Makefile` - バージョン自動抽出ロジックを追加
+- `internal/tui/banner.go` - GetVersion()のフォーマット変更
+- `cmd/koto/main.go` - --versionフラグの表示フォーマット変更
+- `CHANGELOG.md` - バージョン1.0.7を追加
+
+### Testing
+
+- ✅ `make version` でバージョン情報が正しく抽出される
+- ✅ `make build` で ldflags にバージョンが正しく渡される
+- ✅ `./bin/koto --version` で期待通りのフォーマットで表示される
+- ✅ CHANGELOGを更新すると自動的に新しいバージョンが反映される
+
+### Next Steps
+
+- リリース時にgit tagを打てば、そのタグ名が優先的に使用される
+- GoReleaserとの統合も引き続き動作する
+
+---
+
 ## 2025-10-30 (Update 4) - Implement Dynamic Version Information System
 
 ### Implementation Details

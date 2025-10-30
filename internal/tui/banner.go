@@ -28,5 +28,5 @@ func GetSubtitle() string {
 
 // GetVersion returns the version string
 func GetVersion() string {
-	return fmt.Sprintf("koto version %s\n  commit: %s\n  built:  %s", Version, CommitSHA, BuildDate)
+	return fmt.Sprintf("Version: %s\nCommit:  %s\nBuilt:   %s", Version, CommitSHA, BuildDate)
 }

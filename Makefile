@@ -1,7 +1,8 @@
 # Makefile for koto
 
 # Version information
-VERSION ?= dev
+# Extract version from CHANGELOG.md, fallback to git tag, then to default
+VERSION ?= $(shell grep -m 1 '^\#\# \[' CHANGELOG.md 2>/dev/null | sed 's/.*\[\(.*\)\].*/\1/' || git describe --tags --abbrev=0 2>/dev/null || echo "1.0.6")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE := $(shell date -u '+%Y-%m-%d %H:%M:%S UTC')
 
