@@ -402,12 +402,13 @@ func (m Model) renderAddTodoView() string {
 	s.WriteString("\n\n")
 
 	// Show current step
-	stepIndicator := ""
-	if m.addTodoStep == 0 {
+	var stepIndicator string
+	switch m.addTodoStep {
+	case 0:
 		stepIndicator = headerStyle.Render(" Step 1/3: Enter Title ")
-	} else if m.addTodoStep == 1 {
+	case 1:
 		stepIndicator = headerStyle.Render(" Step 2/3: Enter Description (Optional) ")
-	} else {
+	default:
 		stepIndicator = headerStyle.Render(" Step 3/3: Select Priority ")
 	}
 	s.WriteString(stepIndicator)
@@ -467,12 +468,13 @@ func (m Model) renderEditTodoView() string {
 	s.WriteString("\n\n")
 
 	// Show current step
-	stepIndicator := ""
-	if m.editTodoStep == 0 {
+	var stepIndicator string
+	switch m.editTodoStep {
+	case 0:
 		stepIndicator = headerStyle.Render(" Step 1/3: Edit Title ")
-	} else if m.editTodoStep == 1 {
+	case 1:
 		stepIndicator = headerStyle.Render(" Step 2/3: Edit Description (Optional) ")
-	} else {
+	default:
 		stepIndicator = headerStyle.Render(" Step 3/3: Select Priority ")
 	}
 	s.WriteString(stepIndicator)

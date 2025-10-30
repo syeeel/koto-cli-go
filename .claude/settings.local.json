@@ -24,7 +24,8 @@
       "Bash(curl:*)",
       "Bash(ping:*)",
       "Read(//etc/**)",
-      "Bash(go clean:*)"
+      "Bash(go clean:*)",
+      "Bash(golangci-lint run:*)"
     ],
     "deny": [],
     "ask": []

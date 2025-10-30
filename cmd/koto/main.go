@@ -25,7 +25,11 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "Error: failed to initialize database: %v\n", err)
 		os.Exit(1)
 	}
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Error: failed to close database: %v\n", err)
+		}
+	}()
 
 	// Initialize service
 	svc := service.NewTodoService(repo)

@@ -188,7 +188,7 @@ func TestTodoService_AddTodo(t *testing.T) {
 					t.Errorf("unexpected error: %v", err)
 				}
 				if todo == nil {
-					t.Error("expected todo to be created, got nil")
+					t.Fatal("expected todo to be created, got nil")
 				}
 				if todo.ID == 0 {
 					t.Error("expected todo ID to be set")
@@ -280,9 +280,18 @@ func TestTodoService_ListTodos(t *testing.T) {
 	ctx := context.Background()
 
 	// Create multiple todos
-	svc.AddTodo(ctx, "Todo 1", "", model.PriorityLow, nil)
-	svc.AddTodo(ctx, "Todo 2", "", model.PriorityMedium, nil)
-	svc.AddTodo(ctx, "Todo 3", "", model.PriorityHigh, nil)
+	_, err := svc.AddTodo(ctx, "Todo 1", "", model.PriorityLow, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo 1: %v", err)
+	}
+	_, err = svc.AddTodo(ctx, "Todo 2", "", model.PriorityMedium, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo 2: %v", err)
+	}
+	_, err = svc.AddTodo(ctx, "Todo 3", "", model.PriorityHigh, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo 3: %v", err)
+	}
 
 	todos, err := svc.ListTodos(ctx)
 	if err != nil {
@@ -305,7 +314,9 @@ func TestTodoService_ListPendingTodos(t *testing.T) {
 	todo3, _ := svc.AddTodo(ctx, "To Complete", "", model.PriorityHigh, nil)
 
 	// Complete one todo
-	svc.CompleteTodo(ctx, todo3.ID)
+	if err := svc.CompleteTodo(ctx, todo3.ID); err != nil {
+		t.Fatalf("failed to complete todo: %v", err)
+	}
 
 	pending, err := svc.ListPendingTodos(ctx)
 	if err != nil {
@@ -339,11 +350,19 @@ func TestTodoService_ListCompletedTodos(t *testing.T) {
 	ctx := context.Background()
 
 	// Create todos
-	svc.AddTodo(ctx, "Pending", "", model.PriorityLow, nil)
-	todo2, _ := svc.AddTodo(ctx, "To Complete", "", model.PriorityMedium, nil)
+	_, err := svc.AddTodo(ctx, "Pending", "", model.PriorityLow, nil)
+	if err != nil {
+		t.Fatalf("failed to add pending todo: %v", err)
+	}
+	todo2, err := svc.AddTodo(ctx, "To Complete", "", model.PriorityMedium, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo to complete: %v", err)
+	}
 
 	// Complete one
-	svc.CompleteTodo(ctx, todo2.ID)
+	if err := svc.CompleteTodo(ctx, todo2.ID); err != nil {
+		t.Fatalf("failed to complete todo: %v", err)
+	}
 
 	completed, err := svc.ListCompletedTodos(ctx)
 	if err != nil {
@@ -361,14 +380,20 @@ func TestTodoService_ExportToJSON(t *testing.T) {
 	ctx := context.Background()
 
 	// Create some todos
-	svc.AddTodo(ctx, "Todo 1", "Description 1", model.PriorityLow, nil)
-	svc.AddTodo(ctx, "Todo 2", "Description 2", model.PriorityHigh, nil)
+	_, err := svc.AddTodo(ctx, "Todo 1", "Description 1", model.PriorityLow, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo 1: %v", err)
+	}
+	_, err = svc.AddTodo(ctx, "Todo 2", "Description 2", model.PriorityHigh, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo 2: %v", err)
+	}
 
 	// Export to temporary file
 	tempDir := t.TempDir()
 	exportPath := filepath.Join(tempDir, "export.json")
 
-	err := svc.ExportToJSON(ctx, exportPath)
+	err = svc.ExportToJSON(ctx, exportPath)
 	if err != nil {
 		t.Fatalf("failed to export: %v", err)
 	}
@@ -385,25 +410,36 @@ func TestTodoService_ImportFromJSON(t *testing.T) {
 	ctx := context.Background()
 
 	// Create and export some todos
-	svc.AddTodo(ctx, "Todo 1", "Description 1", model.PriorityLow, nil)
-	svc.AddTodo(ctx, "Todo 2", "Description 2", model.PriorityHigh, nil)
+	_, err := svc.AddTodo(ctx, "Todo 1", "Description 1", model.PriorityLow, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo 1: %v", err)
+	}
+	_, err = svc.AddTodo(ctx, "Todo 2", "Description 2", model.PriorityHigh, nil)
+	if err != nil {
+		t.Fatalf("failed to add todo 2: %v", err)
+	}
 
 	tempDir := t.TempDir()
 	exportPath := filepath.Join(tempDir, "export.json")
-	svc.ExportToJSON(ctx, exportPath)
+	if err = svc.ExportToJSON(ctx, exportPath); err != nil {
+		t.Fatalf("failed to export: %v", err)
+	}
 
 	// Create a new service with empty repo
 	newRepo := newMockRepository()
 	newSvc := NewTodoService(newRepo)
 
 	// Import the data
-	err := newSvc.ImportFromJSON(ctx, exportPath)
+	err = newSvc.ImportFromJSON(ctx, exportPath)
 	if err != nil {
 		t.Fatalf("failed to import: %v", err)
 	}
 
 	// Verify imported data
-	todos, _ := newSvc.ListTodos(ctx)
+	todos, err := newSvc.ListTodos(ctx)
+	if err != nil {
+		t.Fatalf("failed to list todos: %v", err)
+	}
 	if len(todos) != 2 {
 		t.Errorf("expected 2 imported todos, got %d", len(todos))
 	}
@@ -428,7 +464,9 @@ func TestTodoService_ImportFromJSON_InvalidJSON(t *testing.T) {
 	// Create a file with invalid JSON
 	tempDir := t.TempDir()
 	invalidPath := filepath.Join(tempDir, "invalid.json")
-	os.WriteFile(invalidPath, []byte("invalid json content"), 0600)
+	if err := os.WriteFile(invalidPath, []byte("invalid json content"), 0600); err != nil {
+		t.Fatalf("failed to create invalid json file: %v", err)
+	}
 
 	err := svc.ImportFromJSON(ctx, invalidPath)
 	if err != ErrInvalidJSON {

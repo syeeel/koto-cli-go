@@ -22,7 +22,11 @@ func setupTestDB(t *testing.T) *SQLiteRepository {
 
 func TestNewSQLiteRepository(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	if repo == nil {
 		t.Fatal("expected repository to be created, got nil")
@@ -35,7 +39,11 @@ func TestNewSQLiteRepository(t *testing.T) {
 
 func TestSQLiteRepository_Create(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -63,7 +71,11 @@ func TestSQLiteRepository_Create(t *testing.T) {
 
 func TestSQLiteRepository_GetByID(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -106,7 +118,11 @@ func TestSQLiteRepository_GetByID(t *testing.T) {
 
 func TestSQLiteRepository_GetByID_NotFound(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 
@@ -118,7 +134,11 @@ func TestSQLiteRepository_GetByID_NotFound(t *testing.T) {
 
 func TestSQLiteRepository_GetAll(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -149,7 +169,11 @@ func TestSQLiteRepository_GetAll(t *testing.T) {
 
 func TestSQLiteRepository_GetByStatus(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -190,7 +214,11 @@ func TestSQLiteRepository_GetByStatus(t *testing.T) {
 
 func TestSQLiteRepository_Update(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -236,7 +264,11 @@ func TestSQLiteRepository_Update(t *testing.T) {
 
 func TestSQLiteRepository_Delete(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -267,7 +299,11 @@ func TestSQLiteRepository_Delete(t *testing.T) {
 
 func TestSQLiteRepository_MarkAsCompleted(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -302,7 +338,11 @@ func TestSQLiteRepository_MarkAsCompleted(t *testing.T) {
 
 func TestSQLiteRepository_AddWorkDuration(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -354,7 +394,11 @@ func TestSQLiteRepository_AddWorkDuration(t *testing.T) {
 
 func TestSQLiteRepository_AddWorkDuration_NotFound(t *testing.T) {
 	repo := setupTestDB(t)
-	defer repo.Close()
+	defer func() {
+		if err := repo.Close(); err != nil {
+			t.Errorf("failed to close repository: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 

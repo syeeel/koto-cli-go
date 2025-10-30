@@ -52,15 +52,13 @@ func NewSQLiteRepository(dbPath string) (*SQLiteRepository, error) {
 
 	// Set file permissions for security (only if not in-memory database)
 	if dbPath != ":memory:" {
-		if err := os.Chmod(dbPath, 0600); err != nil {
-			// Ignore error if file doesn't exist yet
-			// (it will be created by SQLite)
-		}
+		// Ignore error if file doesn't exist yet (it will be created by SQLite)
+		_ = os.Chmod(dbPath, 0600)
 	}
 
 	// Initialize schema
 	if err := initSchema(db); err != nil {
-		db.Close()
+		_ = db.Close() // Ignore close error since we're already returning an error
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
@@ -188,7 +186,9 @@ func (r *SQLiteRepository) GetAll(ctx context.Context) ([]*model.Todo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query todos: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Ignore close error, query results are more important
+	}()
 
 	return r.scanTodos(rows)
 }
@@ -206,7 +206,9 @@ func (r *SQLiteRepository) GetByStatus(ctx context.Context, status model.TodoSta
 	if err != nil {
 		return nil, fmt.Errorf("failed to query todos by status: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close() // Ignore close error, query results are more important
+	}()
 
 	return r.scanTodos(rows)
 }
