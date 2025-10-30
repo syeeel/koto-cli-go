@@ -8,91 +8,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.7] - 2025-10-30
 
 ### Changed
-- **バージョン表示形式**: 「Version: 1.0.7」のようなシンプルで読みやすい形式に変更
-- **Makefile**: CHANGELOGから自動的に最新バージョン番号を抽出するように改善
-- **ポモドーロタイムアウト音**: より高く長い音（880Hz、500ms）に変更し、より目立つようにした
+- **Version Display Format**: Changed to a simple and readable format like "Version: 1.0.7"
+- **Makefile**: Improved to automatically extract the latest version number from CHANGELOG
+- **Pomodoro Timeout Sound**: Changed to a higher and longer sound (880Hz, 500ms) to be more noticeable
 
 ### Fixed
-- **バージョン情報**: 「dev」と表示されていた問題を修正、正しいバージョン番号を表示
+- **Version Information**: Fixed issue where "dev" was displayed, now shows the correct version number
 
 ## [1.0.6] - 2025-10-30
 
 ### Added
-- **レスポンシブレイアウト**: ターミナル幅に応じて動的にレイアウトを調整
-- **最小ターミナル幅チェック**: 100文字未満の場合にエラーメッセージを表示
-- **動的幅計算システム**: 全画面の幅を一元管理する`DynamicWidths`構造体を追加
-- **クロスターミナル互換ASCIIボーダー**: シンプルなASCII文字（+, -, |）を使用したカスタムボーダー
-- **動的バージョン情報システム**: ビルド時に自動的にバージョン、コミットハッシュ、ビルド日時を注入
-- **Makefile**: 開発時のビルドを効率化する包括的なMakefileを追加（build, test, clean, install, run, release等）
+- **Responsive Layout**: Dynamically adjusts layout based on terminal width
+- **Minimum Terminal Width Check**: Displays error message when terminal width is less than 100 characters
+- **Dynamic Width Calculation System**: Added `DynamicWidths` structure to centrally manage full-screen width
+- **Cross-Terminal Compatible ASCII Borders**: Custom borders using simple ASCII characters (+, -, |)
+- **Dynamic Version Information System**: Automatically injects version, commit hash, and build date at build time
+- **Makefile**: Added comprehensive Makefile to streamline development builds (build, test, clean, install, run, release, etc.)
 
 ### Fixed
-- **タスク一覧**: フォーカス時に選択行が2行表示される問題を修正
-- **起動画面**: 枠線が途切れる問題を修正（ASCIIアートとToDoボックスを中央配置）
-- **詳細画面**: 枠線が途切れる問題を修正（全ボックスを動的幅に対応）
-- **ポモドーロ画面**: 枠線が途切れる問題を修正（プログレスバー、情報ボックスを動的幅に対応）
-- **ポモドーロ画面**: タスク情報（Task IDとタスク名）を中央表示に変更
-- **ポモドーロ画面**: プログレスバーを中央表示に改善
-- **macOS Terminal互換性**: Unicode box-drawing charactersをASCII文字に置き換え、全てのターミナルで正しく表示されるように修正
+- **Task List**: Fixed issue where selected row was displayed in 2 lines when focused
+- **Startup Screen**: Fixed issue where borders were cut off (centered ASCII art and ToDo box)
+- **Detail Screen**: Fixed issue where borders were cut off (all boxes now support dynamic width)
+- **Pomodoro Screen**: Fixed issue where borders were cut off (progress bar and info box support dynamic width)
+- **Pomodoro Screen**: Changed task information (Task ID and task name) to center display
+- **Pomodoro Screen**: Improved progress bar center display
+- **macOS Terminal Compatibility**: Replaced Unicode box-drawing characters with ASCII characters so they display correctly in all terminals
 
 ### Changed
-- **メインリスト画面**: カラム幅を動的に計算、タイトルカラムを可変幅に変更
-- **詳細画面**: 3カラムレイアウトを比例配分で動的調整
-- **ポモドーロ画面**: 全要素をターミナル幅に応じてセンタリング
-- **ボーダースタイル**: RoundedBorder/NormalBorderから互換性の高いASCIIボーダーに変更
-- **バージョン表示**: 起動画面とコマンドラインで詳細なバージョン情報（コミット、ビルド日時）を表示
+- **Main List Screen**: Column widths calculated dynamically, title column changed to variable width
+- **Detail Screen**: 3-column layout dynamically adjusted with proportional distribution
+- **Pomodoro Screen**: All elements centered according to terminal width
+- **Border Style**: Changed from RoundedBorder/NormalBorder to highly compatible ASCII borders
+- **Version Display**: Display detailed version information (commit, build date) on startup screen and command line
 
 ### Technical
-- `internal/tui/styles.go`: 動的幅計算関数とヘルパー関数を追加、ASCIIボーダー定義を追加
-- `internal/tui/views.go`: 全画面のレスポンシブ化、最小幅チェック機能を追加、全ボーダーをASCIIに置換、プログレスバー中央表示改善
-- `internal/tui/banner.go`: バージョン情報変数をエクスポート、`GetVersion()`を詳細表示に変更
-- `cmd/koto/main.go`: TUIパッケージにバージョン情報を注入
-- `Makefile`: ビルド時にldflagsでバージョン情報を設定、各種開発タスクを自動化
-- Lipglossの`PlaceHorizontal`を活用した中央配置の実装
-- 全てのUnicode box-drawing charactersをASCII文字に置換してクロスターミナル互換性を向上
-- GoReleaserとの統合により、リリースビルドで自動的にバージョン情報が注入される
+- `internal/tui/styles.go`: Added dynamic width calculation functions and helper functions, added ASCII border definitions
+- `internal/tui/views.go`: Made all screens responsive, added minimum width check feature, replaced all borders with ASCII, improved progress bar center display
+- `internal/tui/banner.go`: Exported version information variables, changed `GetVersion()` to detailed display
+- `cmd/koto/main.go`: Inject version information into TUI package
+- `Makefile`: Set version information with ldflags at build time, automated various development tasks
+- Implemented center alignment using Lipgloss's `PlaceHorizontal`
+- Replaced all Unicode box-drawing characters with ASCII characters to improve cross-terminal compatibility
+- Integrated with GoReleaser so version information is automatically injected in release builds
 
 ## [1.0.3] - 2025-10-30
 
 ### Fixed
-- **install.sh**: アーカイブ名の形式を修正（koto-cli-goプロジェクト名を使用）
-- **install.sh**: バージョン番号から'v'プレフィックスを削除してGoReleaserの実際のアーカイブ名と一致
+- **install.sh**: Fixed archive name format (using koto-cli-go project name)
+- **install.sh**: Removed 'v' prefix from version number to match actual GoReleaser archive name
 
 ### Changed
-- インストールスクリプトがmacOS/Linuxで正常に動作するように修正
+- Fixed installation script to work properly on macOS/Linux
 
 ## [1.0.2] - 2025-10-30
 
 ### Changed
-- Homebrew Tap設定を一時的に無効化（セットアップ準備中）
-- GoReleaser v2互換性のため非推奨設定（format_overrides）を削除
-- アーカイブ設定を簡素化
+- Temporarily disabled Homebrew Tap configuration (setup in progress)
+- Removed deprecated configuration (format_overrides) for GoReleaser v2 compatibility
+- Simplified archive configuration
 
 ### Fixed
-- リリース時のHomebrew Tap 401エラーを修正（設定を無効化）
+- Fixed 401 error in Homebrew Tap during release (disabled configuration)
 
 ## [1.0.1] - 2025-10-30
 
 ### Changed
-- READMEのHomebrew案内を「準備中🚧」ステータスに更新
-- 次回リリース（v1.0.1以降）からHomebrewが利用可能になることを明記
+- Updated Homebrew instructions in README to "Coming Soon 🚧" status
+- Clarified that Homebrew will be available from next release (v1.0.1 or later)
 
 ## [1.0.0] - 2025-10-30
 
 ### Added
-- **GoReleaser統合**: 自動リリースワークフロー
-- **マルチプラットフォームビルド**: macOS (Intel/Apple Silicon), Linux (amd64/arm64), Windows (amd64)
-- **インストールスクリプト**: ワンラインインストール（curl | sh）
-- **バージョン表示**: `--version`フラグでバージョン、コミット、ビルド日時を表示
-- **GitHub Actions**: タグプッシュ時の自動リリースワークフロー
+- **GoReleaser Integration**: Automated release workflow
+- **Multi-Platform Build**: macOS (Intel/Apple Silicon), Linux (amd64/arm64), Windows (amd64)
+- **Installation Script**: One-line installation (curl | sh)
+- **Version Display**: Display version, commit, and build date with `--version` flag
+- **GitHub Actions**: Automated release workflow on tag push
 
 ### Documentation
-- リリースガイド（docs/RELEASE.md）
-- Homebrewセットアップガイド（docs/SETUP_HOMEBREW.md）
-- クイックスタートガイド（docs/QUICKSTART_RELEASE.md）
+- Release guide (docs/RELEASE.md)
+- Homebrew setup guide (docs/SETUP_HOMEBREW.md)
+- Quick start guide (docs/QUICKSTART_RELEASE.md)
 
 ### Infrastructure
-- `.goreleaser.yaml`: GoReleaser設定
-- `.github/workflows/release.yml`: 自動リリースワークフロー
-- `install.sh`: ユーザー向けインストールスクリプト
+- `.goreleaser.yaml`: GoReleaser configuration
+- `.github/workflows/release.yml`: Automated release workflow
+- `install.sh`: User-facing installation script
 
 ---

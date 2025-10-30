@@ -1,381 +1,381 @@
-# koto - ToDo管理CLI
+# koto - ToDo Management CLI
 
-**koto**（事）は、Go言語で開発されたインタラクティブなToDo管理CLIツールです。
-[Bubbletea](https://github.com/charmbracelet/bubbletea)フレームワークを使用した美しいターミナルUIで、快適なタスク管理体験を提供します。
+**koto** (meaning "thing" or "matter" in Japanese) is an interactive ToDo management CLI tool developed in Go.
+It provides a comfortable task management experience with a beautiful terminal UI using the [Bubbletea](https://github.com/charmbracelet/bubbletea) framework.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Go Version](https://img.shields.io/badge/go-1.21+-00ADD8.svg)
 
-## ✨ 特徴
+## ✨ Features
 
-- 🎨 **リッチなTUI** - Bubbletea/Lipglossによる美しいターミナルインターフェース
-- ⚡ **軽量・高速** - Pure Go（CGO不要）で高速起動
-- 📊 **優先度管理** - 3段階の優先度設定（🔴高 🟡中 🟢低）
-- 📅 **期限管理** - 期限日の設定と期限切れ警告
-- 💾 **SQLite保存** - ローカルデータベースで確実にデータを保持
-- 📤 **エクスポート/インポート** - JSON形式でバックアップ・移行可能
-- ⌨️ **Vimライクなキーバインド** - j/kでの快適なナビゲーション
-- 🔍 **ステータスフィルター** - 未完了/完了済みで絞り込み表示
-- 🍅 **ポモドーロタイマー** - 25分間のタイマーで集中作業をサポート、作業時間の自動記録
+- 🎨 **Rich TUI** - Beautiful terminal interface with Bubbletea/Lipgloss
+- ⚡ **Lightweight & Fast** - Pure Go (no CGO required) with fast startup
+- 📊 **Priority Management** - 3-level priority system (🔴High 🟡Medium 🟢Low)
+- 📅 **Due Date Management** - Set due dates with overdue warnings
+- 💾 **SQLite Storage** - Reliable local database for data persistence
+- 📤 **Export/Import** - Backup and migration in JSON format
+- ⌨️ **Vim-like Keybindings** - Comfortable navigation with j/k
+- 🔍 **Status Filtering** - Filter by pending/completed status
+- 🍅 **Pomodoro Timer** - 25-minute timer to support focused work with automatic time tracking
 
-## 📦 インストール
+## 📦 Installation
 
-### インストールスクリプト（推奨・macOS/Linux）
+### Installation Script (Recommended for macOS/Linux)
 
-最も簡単な方法：
+The easiest method:
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/syeeel/koto-cli-go/main/install.sh | sh
 ```
 
-このスクリプトは：
-- 最新バージョンを自動検出
-- お使いのOS/アーキテクチャに合わせてダウンロード
-- `~/.local/bin`にインストール
-- PATHの設定方法を案内
+This script will:
+- Auto-detect the latest version
+- Download for your OS/architecture
+- Install to `~/.local/bin`
+- Guide you through PATH setup
 
-### Homebrew（macOS - 準備中🚧）
+### Homebrew (macOS - Coming Soon 🚧)
 
-**現在セットアップ中です。次回リリース（v1.0.1以降）から利用可能になります。**
+**Currently under setup. Will be available from the next release (v1.0.1 or later).**
 
-準備が完了次第、以下のコマンドでインストールできるようになります：
+Once ready, you'll be able to install with:
 
 ```bash
 brew tap syeeel/tap
 brew install koto
 ```
 
-**それまでは、インストールスクリプト（上記）をご利用ください。**
+**Until then, please use the installation script (above).**
 
 ### Go install
 
-Go環境がある場合：
+If you have a Go environment:
 
 ```bash
 go install github.com/syeeel/koto-cli-go/cmd/koto@latest
 ```
 
-### ビルド済みバイナリ
+### Pre-built Binaries
 
-[Releases](https://github.com/syeeel/koto-cli-go/releases/latest)ページから、お使いのプラットフォーム向けのバイナリをダウンロードできます。
+You can download binaries for your platform from the [Releases](https://github.com/syeeel/koto-cli-go/releases/latest) page.
 
-対応プラットフォーム：
+Supported platforms:
 - **macOS**: darwin_amd64 (Intel), darwin_arm64 (Apple Silicon)
 - **Linux**: linux_amd64, linux_arm64
 - **Windows**: windows_amd64
 
-ダウンロード後、解凍してPATHの通った場所に配置してください。
+After downloading, extract and place the binary in a directory in your PATH.
 
-### ソースからビルド
+### Build from Source
 
 ```bash
-# リポジトリをクローン
+# Clone the repository
 git clone https://github.com/syeeel/koto-cli-go.git
 cd koto-cli-go
 
-# 依存関係をダウンロード
+# Download dependencies
 go mod download
 
-# ビルド
+# Build
 go build -o bin/koto ./cmd/koto
 
-# 実行
+# Run
 ./bin/koto
 ```
 
-## 🚀 使い方
+## 🚀 Usage
 
-### アプリケーションの起動
+### Starting the Application
 
 ```bash
 koto
 ```
 
-起動すると、インタラクティブなTUIが表示されます。
+Once started, an interactive TUI will be displayed.
 
-### 基本コマンド
+### Basic Commands
 
-#### ToDoの追加
+#### Adding a ToDo
 
 ```bash
-/add 買い物に行く
-/add レポート作成 --desc="第5章をまとめる" --priority=high --due=2025-10-25
+/add Go shopping
+/add Write report --desc="Summarize Chapter 5" --priority=high --due=2025-10-25
 ```
 
-**オプション**:
-- `--desc="説明文"` - ToDoの詳細説明
-- `--priority=low|medium|high` - 優先度（デフォルト: medium）
-- `--due=YYYY-MM-DD` - 期限日
+**Options**:
+- `--desc="description"` - Detailed description of the ToDo
+- `--priority=low|medium|high` - Priority level (default: medium)
+- `--due=YYYY-MM-DD` - Due date
 
-#### ToDoの表示
+#### Listing ToDos
 
 ```bash
-/list                      # すべてのToDoを表示
-/list --status=pending     # 未完了のみ
-/list --status=completed   # 完了済みのみ
+/list                      # Show all ToDos
+/list --status=pending     # Pending only
+/list --status=completed   # Completed only
 ```
 
-#### ToDoの完了
+#### Completing a ToDo
 
 ```bash
-/done 1    # ID 1のToDoを完了にする
+/done 1    # Mark ToDo with ID 1 as completed
 ```
 
-#### ToDoの編集
+#### Editing a ToDo
 
 ```bash
-/edit 1 --title="新しいタイトル"
+/edit 1 --title="New title"
 /edit 1 --priority=high
-/edit 1 --desc="新しい説明"
+/edit 1 --desc="New description"
 /edit 1 --due=2025-12-31
 ```
 
-#### ToDoの削除
+#### Deleting a ToDo
 
 ```bash
-/delete 1    # ID 1のToDoを削除
+/delete 1    # Delete ToDo with ID 1
 ```
 
-#### エクスポート/インポート
+#### Export/Import
 
 ```bash
-/export ~/my-todos.json     # JSONファイルにエクスポート
-/import ~/todos-backup.json # JSONファイルからインポート
+/export ~/my-todos.json     # Export to JSON file
+/import ~/todos-backup.json # Import from JSON file
 ```
 
-#### ヘルプ
+#### Help
 
 ```bash
-/help    # ヘルプ画面を表示
+/help    # Show help screen
 ```
 
-#### ポモドーロタイマー
+#### Pomodoro Timer
 
 ```bash
-/pomo              # 25分間のタイマーを開始
-/pomo 1            # ID 1のToDoに紐づけて25分間のタイマーを開始（作業時間を自動記録）
+/pomo              # Start a 25-minute timer
+/pomo 1            # Start a 25-minute timer linked to ToDo ID 1 (automatically records work time)
 ```
 
-**ポモドーロタイマーの使い方**:
-- タイマー実行中は専用画面が表示されます
-- 25分経過するとアラーム音が鳴ります
-- タスクIDを指定した場合、作業時間が自動的に記録されます
-- `Esc`キーでタイマーをキャンセルしてメイン画面に戻ります
+**How to use the Pomodoro Timer**:
+- A dedicated screen is displayed during the timer
+- An alarm sounds after 25 minutes
+- If a task ID is specified, work time is automatically recorded
+- Press `Esc` to cancel the timer and return to the main screen
 
-### ⌨️ キーボードショートカット
+### ⌨️ Keyboard Shortcuts
 
-| キー | 動作 |
+| Key | Action |
 |------|------|
-| `↑` / `k` | カーソルを上に移動 |
-| `↓` / `j` | カーソルを下に移動 |
-| `Enter` | コマンドを実行 |
-| `Esc` | 入力欄をクリア |
-| `?` | ヘルプ画面を表示/非表示 |
-| `Ctrl+C` | アプリケーション終了 |
+| `↑` / `k` | Move cursor up |
+| `↓` / `j` | Move cursor down |
+| `Enter` | Execute command |
+| `Esc` | Clear input field |
+| `?` | Show/hide help screen |
+| `Ctrl+C` | Exit application |
 
-### 📺 画面の見方
+### 📺 Screen Layout
 
 ```
 📝 koto - ToDo Manager
 
-  ⬜ 🔴 [1] 重要な会議の準備
-> ✅ 🟡 [2] 買い物リスト ⚠ OVERDUE
-  ⬜ 🟢 [3] メールの返信
+  ⬜ 🔴 [1] Prepare for important meeting
+> ✅ 🟡 [2] Shopping list ⚠ OVERDUE
+  ⬜ 🟢 [3] Reply to emails
 
-> /add 新しいタスク
+> /add New task
 
 Commands: /add, /list, /done, /delete, /edit, /help | Navigate: ↑/↓ or j/k | Help: ? | Quit: Ctrl+C
 ```
 
-**表示の説明**:
-- `>` - 現在選択中のToDo（カーソル位置）
-- `⬜` - 未完了
-- `✅` - 完了済み
-- `🔴🟡🟢` - 優先度（高・中・低）
-- `[数字]` - ToDo ID
-- `⚠ OVERDUE` - 期限切れの警告
-- `🍅 XXXm` - 累積作業時間（ポモドーロタイマーで記録）
+**Display Explanation**:
+- `>` - Currently selected ToDo (cursor position)
+- `⬜` - Pending
+- `✅` - Completed
+- `🔴🟡🟢` - Priority (High, Medium, Low)
+- `[number]` - ToDo ID
+- `⚠ OVERDUE` - Overdue warning
+- `🍅 XXXm` - Cumulative work time (recorded by Pomodoro timer)
 
-## 📁 データの保存場所
+## 📁 Data Storage Location
 
-すべてのToDoは以下のSQLiteデータベースに保存されます：
+All ToDos are stored in the following SQLite database:
 
 ```
 ~/.koto/koto.db
 ```
 
-バックアップを取る場合は、このファイルをコピーするか、`/export` コマンドを使用してください。
+To back up, copy this file or use the `/export` command.
 
-## 🏗️ アーキテクチャ
+## 🏗️ Architecture
 
-kotoは、クリーンアーキテクチャに基づいたレイヤー構造を採用しています：
+koto adopts a layered architecture based on clean architecture principles:
 
 ```
 ┌─────────────────┐
-│   TUI Layer     │  Bubbletea UI（コマンド入力、表示）
+│   TUI Layer     │  Bubbletea UI (command input, display)
 ├─────────────────┤
-│ Service Layer   │  ビジネスロジック、バリデーション
+│ Service Layer   │  Business logic, validation
 ├─────────────────┤
-│Repository Layer │  データアクセス（SQLite）
+│Repository Layer │  Data access (SQLite)
 ├─────────────────┤
-│  Model Layer    │  データ構造定義
+│  Model Layer    │  Data structure definitions
 └─────────────────┘
 ```
 
-### ディレクトリ構成
+### Directory Structure
 
 ```
 koto-cli-go/
 ├── cmd/
-│   └── koto/              # メインエントリーポイント
+│   └── koto/              # Main entry point
 │       └── main.go
 ├── internal/
-│   ├── model/             # データモデル（Todo, Status, Priority）
+│   ├── model/             # Data models (Todo, Status, Priority)
 │   │   ├── todo.go
 │   │   └── todo_test.go
-│   ├── repository/        # データアクセス層
+│   ├── repository/        # Data access layer
 │   │   ├── repository.go
 │   │   ├── sqlite.go
 │   │   └── sqlite_test.go
-│   ├── service/           # ビジネスロジック層
+│   ├── service/           # Business logic layer
 │   │   ├── todo_service.go
 │   │   └── todo_service_test.go
-│   ├── tui/               # ターミナルUI
+│   ├── tui/               # Terminal UI
 │   │   ├── model.go
 │   │   ├── update.go
 │   │   ├── views.go
 │   │   ├── styles.go
 │   │   └── commands.go
-│   └── config/            # 設定管理
+│   └── config/            # Configuration management
 │       └── config.go
-├── migrations/            # データベーススキーマ
+├── migrations/            # Database schema
 │   └── 001_init.sql
-├── docs/                  # ドキュメント
-│   ├── design/            # 設計書
-│   └── implementation/    # 実装管理
+├── docs/                  # Documentation
+│   ├── design/            # Design documents
+│   └── implementation/    # Implementation management
 ├── go.mod
 ├── go.sum
 └── README.md
 ```
 
-## 🛠️ 開発環境
+## 🛠️ Development Environment
 
-### 必要な環境
+### Requirements
 
-- Go 1.21以上
-- SQLite 3（Pure Go実装を使用するため不要）
+- Go 1.21 or later
+- SQLite 3 (not required as we use Pure Go implementation)
 
-### 依存関係
+### Dependencies
 
-- [github.com/charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea) - TUIフレームワーク
-- [github.com/charmbracelet/bubbles](https://github.com/charmbracelet/bubbles) - TUIコンポーネント
-- [github.com/charmbracelet/lipgloss](https://github.com/charmbracelet/lipgloss) - スタイリング
+- [github.com/charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea) - TUI framework
+- [github.com/charmbracelet/bubbles](https://github.com/charmbracelet/bubbles) - TUI components
+- [github.com/charmbracelet/lipgloss](https://github.com/charmbracelet/lipgloss) - Styling
 - [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) - Pure Go SQLite
 
-### 開発コマンド
+### Development Commands
 
 ```bash
-# 依存関係のダウンロード
+# Download dependencies
 go mod download
 
-# テストの実行
+# Run tests
 go test ./...
-go test -v ./internal/model/...     # Model層のみ
-go test -v ./internal/repository/... # Repository層のみ
-go test -v ./internal/service/...    # Service層のみ
+go test -v ./internal/model/...     # Model layer only
+go test -v ./internal/repository/... # Repository layer only
+go test -v ./internal/service/...    # Service layer only
 
-# リント
+# Lint
 go vet ./...
-golangci-lint run  # golangci-lintがインストール済みの場合
+golangci-lint run  # If golangci-lint is installed
 
-# ビルド
+# Build
 go build -o bin/koto ./cmd/koto
 
-# クロスコンパイル
+# Cross-compile
 GOOS=darwin GOARCH=amd64 go build -o bin/koto-darwin-amd64 ./cmd/koto
 GOOS=linux GOARCH=amd64 go build -o bin/koto-linux-amd64 ./cmd/koto
 GOOS=windows GOARCH=amd64 go build -o bin/koto-windows-amd64.exe ./cmd/koto
 ```
 
-### DevContainer環境
+### DevContainer Environment
 
-このプロジェクトはVS Code / Cursor用のDevContainer環境を含んでいます。
+This project includes a DevContainer environment for VS Code / Cursor.
 
 ```bash
-# VS Code / Cursorで開く
-# "Reopen in Container" を選択するだけで開発環境が整います
+# Open in VS Code / Cursor
+# Simply select "Reopen in Container" to set up your development environment
 ```
 
-## 🧪 テスト
+## 🧪 Testing
 
-このプロジェクトは、各層で包括的なテストを実装しています。
+This project implements comprehensive tests for each layer.
 
 ```bash
-# すべてのテストを実行
+# Run all tests
 go test ./...
 
-# カバレッジレポート
+# Coverage report
 go test -cover ./...
 
-# 詳細なカバレッジレポート
+# Detailed coverage report
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
-**テスト統計**:
-- Model層: 3テスト関数、7サブテスト
-- Repository層: 9テスト関数（インメモリDB使用）
-- Service層: 13テスト関数（モックRepository使用）
+**Test Statistics**:
+- Model layer: 3 test functions, 7 subtests
+- Repository layer: 9 test functions (using in-memory DB)
+- Service layer: 13 test functions (using mock Repository)
 
-## 📝 ライセンス
+## 📝 License
 
-このプロジェクトは[MITライセンス](LICENSE.md)の下で公開されています。
+This project is released under the [MIT License](LICENSE.md).
 
-## 🤝 コントリビューション
+## 🤝 Contributing
 
-プルリクエストを歓迎します！バグ報告や機能要望は、[Issues](https://github.com/syeeel/koto-cli-go/issues)にお願いします。
+Pull requests are welcome! For bug reports and feature requests, please use [Issues](https://github.com/syeeel/koto-cli-go/issues).
 
-### 開発ガイドライン
+### Development Guidelines
 
-1. このリポジトリをフォーク
-2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. テストを追加・実行 (`go test ./...`)
-4. コミット (`git commit -m 'feat: Add amazing feature'`)
-5. プッシュ (`git push origin feature/amazing-feature`)
-6. プルリクエストを作成
+1. Fork this repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Add and run tests (`go test ./...`)
+4. Commit (`git commit -m 'feat: Add amazing feature'`)
+5. Push (`git push origin feature/amazing-feature`)
+6. Create a pull request
 
-詳細は[.claude/CLAUDE.md](.claude/CLAUDE.md)の開発ガイドを参照してください。
+For more details, see the development guide in [.claude/CLAUDE.md](.claude/CLAUDE.md).
 
-## 🔗 参考リンク
+## 🔗 References
 
-- [Bubbletea](https://github.com/charmbracelet/bubbletea) - TUIフレームワーク
-- [Bubbles](https://github.com/charmbracelet/bubbles) - TUIコンポーネント集
-- [Lipgloss](https://github.com/charmbracelet/lipgloss) - ターミナルスタイリング
+- [Bubbletea](https://github.com/charmbracelet/bubbletea) - TUI framework
+- [Bubbles](https://github.com/charmbracelet/bubbles) - TUI components
+- [Lipgloss](https://github.com/charmbracelet/lipgloss) - Terminal styling
 - [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) - Pure Go SQLite
 
 
 ## 💡 FAQ
 
-### Q: データはどこに保存されますか？
+### Q: Where is the data stored?
 
-A: `~/.koto/koto.db` にSQLiteデータベースとして保存されます。
+A: Data is stored as an SQLite database at `~/.koto/koto.db`.
 
-### Q: 複数のマシンでToDoを同期できますか？
+### Q: Can I sync ToDos across multiple machines?
 
-A: 現在、同期機能はありません。`/export` コマンドでJSONファイルにエクスポートし、他のマシンで `/import` することで移行は可能です。
+A: Currently, there is no sync feature. However, you can export to a JSON file using `/export` and import it on another machine with `/import`.
 
-### Q: ToDoの検索機能はありますか？
+### Q: Is there a search feature for ToDos?
 
-A: 現在のバージョンでは検索機能は実装されていません。将来のバージョンで追加予定です。
+A: The search feature is not implemented in the current version. It is planned for a future release.
 
-### Q: Windowsで動作しますか？
+### Q: Does it work on Windows?
 
-A: はい、Pure Go実装のため、Windows、macOS、Linuxすべてで動作します。
+A: Yes, thanks to the Pure Go implementation, it works on Windows, macOS, and Linux.
 
-## 📮 お問い合わせ
+## 📮 Contact
 
-バグ報告や質問は、[GitHub Issues](https://github.com/syeeel/koto-cli-go/issues)までお願いします。
+For bug reports and questions, please use [GitHub Issues](https://github.com/syeeel/koto-cli-go/issues).
 
 ---
 
-**koto**を使って、快適なタスク管理を！ 🎵
+**koto** - Manage your tasks comfortably! 🎵
