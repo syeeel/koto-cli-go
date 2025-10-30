@@ -35,9 +35,6 @@ build-errors.log
 # .idea/
 # .vscode/
 
-# Claude Code
-.claude/settings.local.json
-
 # ignore images
 /images/
 
@@ -47,5 +44,7 @@ dist/
 # debug files
 /debug/
 
-# setting.local.json
-.claude/settings.local.json
+# Claude Code settings
+/.claude/
+/.claude-plugin/
+
