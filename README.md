@@ -344,7 +344,6 @@ Pull requests are welcome! For bug reports and feature requests, please use [Iss
 5. Push (`git push origin feature/amazing-feature`)
 6. Create a pull request
 
-For more details, see the development guide in [.claude/CLAUDE.md](.claude/CLAUDE.md).
 
 ## 🔗 References
 
