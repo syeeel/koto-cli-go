@@ -36,8 +36,7 @@ builds:
 
 # Archive configuration
 archives:
-  - id: koto
-    name_template: >-
+  - name_template: >-
       {{ .ProjectName }}_
       {{- .Version }}_
       {{- .Os }}_
@@ -45,9 +44,6 @@ archives:
     files:
       - LICENSE.md
       - README.md
-    format_overrides:
-      - goos: windows
-        format: zip
 
 # Checksum configuration
 checksum:
@@ -78,18 +74,22 @@ changelog:
       order: 999
 
 # Homebrew Tap configuration
-brews:
-  - repository:
-      owner: syeeel
-      name: homebrew-tap
-      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
-    directory: Formula
-    homepage: "https://github.com/syeeel/koto-cli-go"
-    description: "Interactive ToDo management CLI tool with beautiful TUI"
-    license: "MIT"
-    commit_author:
-      name: goreleaserbot
-      email: bot@goreleaser.com
+# Temporarily disabled until TAP_GITHUB_TOKEN is configured
+# Uncomment and configure when ready to enable Homebrew support
+# See docs/SETUP_HOMEBREW.md for setup instructions
+#
+# brews:
+#   - repository:
+#       owner: syeeel
+#       name: homebrew-tap
+#       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+#     directory: Formula
+#     homepage: "https://github.com/syeeel/koto-cli-go"
+#     description: "Interactive ToDo management CLI tool with beautiful TUI"
+#     license: "MIT"
+#     commit_author:
+#       name: goreleaserbot
+#       email: bot@goreleaser.com
 
 # Release configuration
 release:
