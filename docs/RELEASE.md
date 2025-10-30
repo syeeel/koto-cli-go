@@ -77,7 +77,7 @@ goreleaser release --skip=publish --clean
 
 ```bash
 # 新しいバージョンをタグ
-git tag -a v1.2.3 -m "Release v1.0.0"
+git tag -a v1.0.0 -m "Release v1.0.0"
 
 # タグをリモートにプッシュ
 git push origin v1.0.0
