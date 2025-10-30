@@ -27,8 +27,6 @@ func main() {
 	// Handle version flag
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Printf("Version: %s\n", version)
-		fmt.Printf("Commit:  %s\n", commit)
-		fmt.Printf("Built:   %s\n", date)
 		return
 	}
 	// Get configuration
