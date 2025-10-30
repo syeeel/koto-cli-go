@@ -45,6 +45,6 @@ dist/
 /debug/
 
 # Claude Code settings
-/.claude/
-/.claude-plugin/
+.claude/
+.claude-plugin/
 
