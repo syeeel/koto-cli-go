@@ -29,7 +29,10 @@
       "Bash(chmod:*)",
       "Bash(go install:*)",
       "Bash(./bin/koto:*)",
-      "Bash(goreleaser build:*)"
+      "Bash(goreleaser build:*)",
+      "Bash(goreleaser check:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

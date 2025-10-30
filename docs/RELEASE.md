@@ -61,7 +61,7 @@ goreleaser release --skip=publish --clean
 `CHANGELOG.md`に変更内容を記録します：
 
 ```markdown
-## [1.2.3] - 2025-10-30
+## [1.0.0] - 2025-10-30
 
 ### Added
 - 新機能の説明

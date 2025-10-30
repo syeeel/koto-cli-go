@@ -1,6 +1,6 @@
 # koto - ToDo管理CLI
 
-**koto**（琴）は、Go言語で開発されたインタラクティブなToDo管理CLIツールです。
+**koto**（事）は、Go言語で開発されたインタラクティブなToDo管理CLIツールです。
 [Bubbletea](https://github.com/charmbracelet/bubbletea)フレームワークを使用した美しいターミナルUIで、快適なタスク管理体験を提供します。
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
