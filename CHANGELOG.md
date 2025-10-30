@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Recent Todos Display**: Increased maximum character count for task titles from 15 to 22 characters (1.5x increase)
+
 ### Removed
 - **Unnecessary File**: Removed `--help` file from repository
 

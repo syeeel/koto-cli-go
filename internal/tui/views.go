@@ -407,8 +407,8 @@ func (m Model) renderBannerTodoBox() string {
 			// Number in green
 			number := bannerTodoNumberStyle.Render(fmt.Sprintf("%d.", i+1))
 
-			// Title - truncate if longer than 15 characters
-			title := truncateTodoTitle(todo.Title, 15)
+			// Title - truncate if longer than 22 characters
+			title := truncateTodoTitle(todo.Title, 22)
 
 			// Format: number title
 			line := fmt.Sprintf("%s %s", number, bannerTodoItemStyle.Render(title))
