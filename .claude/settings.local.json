@@ -28,5 +28,17 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '\\a\\a\\a' > /dev/tty && sleep 0.3 && printf '\\a' > /dev/tty"
+          }
+        ]
+      }
+    ]
   }
 }

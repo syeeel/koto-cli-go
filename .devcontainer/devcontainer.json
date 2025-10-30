@@ -42,7 +42,9 @@
           "zsh": {
             "path": "zsh"
           }
-        }
+        },
+        "terminal.integrated.enableBell": true,
+        "audioCues.terminalBell": "on"
       }
     }
   },
