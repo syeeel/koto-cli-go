@@ -53,7 +53,7 @@ func (m Model) renderMinWidthErrorView() string {
 	)
 
 	boxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		BorderStyle(simpleBorder).
 		BorderForeground(accentRed).
 		Padding(2, 4).
 		Foreground(accentRed).
@@ -613,7 +613,7 @@ func (m Model) renderPomodoroView() string {
 
 		if todoTitle != "" {
 			taskInfoBox := lipgloss.NewStyle().
-				Border(lipgloss.NormalBorder()).
+				BorderStyle(simpleBorder).
 				BorderForeground(lipgloss.Color("#585b70")).
 				Padding(1, 2).
 				Width(widths.PomodoroBox).
@@ -633,7 +633,7 @@ func (m Model) renderPomodoroView() string {
 		}
 	} else {
 		infoBox := lipgloss.NewStyle().
-			Border(lipgloss.NormalBorder()).
+			BorderStyle(simpleBorder).
 			BorderForeground(lipgloss.Color("#585b70")).
 			Padding(1, 2).
 			Width(widths.PomodoroBox).
@@ -903,7 +903,7 @@ func (m Model) renderDetailView() string {
 
 	if targetTodo == nil {
 		errorBox := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
+			BorderStyle(simpleBorder).
 			BorderForeground(accentRed).
 			Padding(1, 2).
 			Width(widths.DetailBox).
@@ -928,7 +928,7 @@ func (m Model) renderDetailView() string {
 		Render(targetTodo.Title)
 	titleBoxContent := titleLabel + "\n" + titleContent
 	titleBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		BorderStyle(simpleBorder).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
 		Width(widths.DetailBox)
@@ -951,7 +951,7 @@ func (m Model) renderDetailView() string {
 	}
 	descBoxContent := descLabel + "\n" + descContent
 	descBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		BorderStyle(simpleBorder).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(2, 2).  // Increased vertical padding
 		Height(8).      // Set explicit height for 3x size
@@ -1007,7 +1007,7 @@ func (m Model) renderDetailView() string {
 		Render("Priority")
 	priorityBoxContent := priorityLabel + "\n" + priorityValue
 	priorityBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		BorderStyle(simpleBorder).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
 		Width(widths.DetailColumn)
@@ -1020,7 +1020,7 @@ func (m Model) renderDetailView() string {
 		Render("Total Work Time")
 	workBoxContent := workLabel + "\n" + workValue
 	workBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		BorderStyle(simpleBorder).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
 		Width(widths.DetailColumn)
@@ -1033,7 +1033,7 @@ func (m Model) renderDetailView() string {
 		Render("Created")
 	timestampBoxContent := timestampLabel + "\n" + timestampContent
 	timestampBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		BorderStyle(simpleBorder).
 		BorderForeground(lipgloss.Color("#585b70")).
 		Padding(1, 2).
 		Width(widths.DetailColumn)

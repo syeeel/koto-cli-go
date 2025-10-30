@@ -6,6 +6,18 @@ import "github.com/charmbracelet/lipgloss"
 const MinTerminalWidth = 100
 
 var (
+	// simpleBorder is a cross-terminal compatible ASCII border
+	simpleBorder = lipgloss.Border{
+		Top:         "-",
+		Bottom:      "-",
+		Left:        "|",
+		Right:       "|",
+		TopLeft:     "+",
+		TopRight:    "+",
+		BottomLeft:  "+",
+		BottomRight: "+",
+	}
+
 	// Theme colors (transparent backgrounds)
 	fgDefault   = lipgloss.Color("#cdd6f4") // Light text
 	fgSelected  = lipgloss.Color("#39ff14") // Neon green for selected text
@@ -83,7 +95,7 @@ var (
 
 	// bannerTodoBoxStyle is the style for the todo list box on the banner screen
 	bannerTodoBoxStyle = lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
+				BorderStyle(simpleBorder).
 				BorderForeground(lipgloss.Color("#06c775")).
 				Padding(1, 2).
 				Width(40)
@@ -199,7 +211,7 @@ func calculateDynamicWidths(termWidth int) DynamicWidths {
 // createResponsiveBoxStyle creates a box style with dynamic width
 func createResponsiveBoxStyle(width int, borderStyle lipgloss.Border, borderColor lipgloss.Color) lipgloss.Style {
 	return lipgloss.NewStyle().
-		Border(borderStyle).
+		BorderStyle(borderStyle).
 		BorderForeground(borderColor).
 		Padding(1, 2).
 		Width(width)

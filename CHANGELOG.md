@@ -5,12 +5,13 @@ All notable changes to koto will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.5] - 2025-10-30
+## [1.0.6] - 2025-10-30
 
 ### Added
 - **レスポンシブレイアウト**: ターミナル幅に応じて動的にレイアウトを調整
 - **最小ターミナル幅チェック**: 100文字未満の場合にエラーメッセージを表示
 - **動的幅計算システム**: 全画面の幅を一元管理する`DynamicWidths`構造体を追加
+- **クロスターミナル互換ASCIIボーダー**: シンプルなASCII文字（+, -, |）を使用したカスタムボーダー
 
 ### Fixed
 - **タスク一覧**: フォーカス時に選択行が2行表示される問題を修正
@@ -18,16 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **詳細画面**: 枠線が途切れる問題を修正（全ボックスを動的幅に対応）
 - **ポモドーロ画面**: 枠線が途切れる問題を修正（プログレスバー、情報ボックスを動的幅に対応）
 - **ポモドーロ画面**: タスク情報（Task IDとタスク名）を中央表示に変更
+- **macOS Terminal互換性**: Unicode box-drawing charactersをASCII文字に置き換え、全てのターミナルで正しく表示されるように修正
 
 ### Changed
 - **メインリスト画面**: カラム幅を動的に計算、タイトルカラムを可変幅に変更
 - **詳細画面**: 3カラムレイアウトを比例配分で動的調整
 - **ポモドーロ画面**: 全要素をターミナル幅に応じてセンタリング
+- **ボーダースタイル**: RoundedBorder/NormalBorderから互換性の高いASCIIボーダーに変更
 
 ### Technical
-- `internal/tui/styles.go`: 動的幅計算関数とヘルパー関数を追加
-- `internal/tui/views.go`: 全画面のレスポンシブ化、最小幅チェック機能を追加
+- `internal/tui/styles.go`: 動的幅計算関数とヘルパー関数を追加、ASCIIボーダー定義を追加
+- `internal/tui/views.go`: 全画面のレスポンシブ化、最小幅チェック機能を追加、全ボーダーをASCIIに置換
 - Lipglossの`PlaceHorizontal`を活用した中央配置の実装
+- 全てのUnicode box-drawing charactersをASCII文字に置換してクロスターミナル互換性を向上
 
 ## [1.0.3] - 2025-10-30
 

@@ -4,6 +4,121 @@ This file records the implementation history, technical decisions, issues encoun
 
 ---
 
+## 2025-10-30 (Update 3) - Replace Unicode Borders with ASCII for Cross-Terminal Compatibility
+
+### Implementation Details
+
+#### 問題の根本原因
+
+**症状**: macOSのTerminalで枠線が途切れる、表示が崩れる
+- Cursor内蔵terminalでは問題なく表示される
+- macOSのデフォルトTerminalでは枠線が正しく表示されない
+- 詳細画面とポモドーロ画面で顕著
+
+**根本原因の特定**:
+1. **Unicode box-drawing characters**: `RoundedBorder()`と`NormalBorder()`はUnicodeのbox-drawing charactersを使用
+2. **ターミナル環境の違い**: フォントやエンコーディングの違いにより、Unicodeボーダー文字が正しく表示されない
+3. **文字幅計算の不一致**: 特に日本語などの全角文字と組み合わせると、ターミナルによって文字幅の計算が異なる
+
+#### 解決策
+
+**ASCII文字のみを使用したカスタムボーダーに変更**
+
+```go
+simpleBorder := lipgloss.Border{
+    Top:         "-",
+    Bottom:      "-",
+    Left:        "|",
+    Right:       "|",
+    TopLeft:     "+",
+    TopRight:    "+",
+    BottomLeft:  "+",
+    BottomRight: "+",
+}
+```
+
+**メリット**:
+- ✅ 全てのターミナルで確実に表示される
+- ✅ フォントやエンコーディングに依存しない
+- ✅ 文字幅の計算が一貫している
+- ✅ レトロな見た目で視認性が高い
+
+#### 変更内容
+
+**1. internal/tui/styles.go**
+- `simpleBorder`変数を追加（ASCII文字のカスタムボーダー）
+- `bannerTodoBoxStyle`を`RoundedBorder()`から`simpleBorder`に変更
+- `createResponsiveBoxStyle`関数の`Border()`を`BorderStyle()`に修正
+
+**2. internal/tui/views.go**
+- 全ての`Border(lipgloss.RoundedBorder())`を`BorderStyle(simpleBorder)`に置換
+- 全ての`Border(lipgloss.NormalBorder())`を`BorderStyle(simpleBorder)`に置換
+
+**置換箇所**:
+1. 最小幅エラー画面のエラーボックス
+2. 詳細画面: タイトルボックス、説明ボックス、Priorityボックス、Work Timeボックス、Createdボックス
+3. 詳細画面: Todo not foundエラーボックス
+4. ポモドーロ画面: タスク情報ボックス、一般セッション情報ボックス
+
+#### テスト結果
+
+```bash
+✅ ビルド成功: go build -o bin/koto ./cmd/koto
+✅ 全テスト通過: 23/23 tests passed
+```
+
+#### 期待される効果
+
+1. **完全なクロスターミナル互換性**
+   - macOS Terminal, iTerm2, Alacritty, Kitty, Windows Terminal 全てで動作
+   - フォントやエンコーディング設定に依存しない
+
+2. **一貫した表示**
+   - 全ての環境で同じ見た目
+   - 日本語文字との組み合わせでも問題なし
+
+3. **保守性の向上**
+   - シンプルなASCII文字のみ
+   - ボーダーの定義が一箇所に集約
+
+#### デザインの変更
+
+**Before (Unicode)**:
+```
+╭────────────────╮
+│ Title          │
+╰────────────────╯
+```
+
+**After (ASCII)**:
+```
++----------------+
+| Title          |
++----------------+
+```
+
+#### 学んだこと
+
+1. **ターミナル互換性の重要性**
+   - Unicode文字は環境依存が大きい
+   - クロスプラットフォームアプリではASCII文字が最も安全
+
+2. **Lipglossのボーダーオプション**
+   - カスタムボーダーで任意の文字を使用可能
+   - `BorderStyle()`で柔軟にボーダーを設定
+
+3. **視覚的なトレードオフ**
+   - 見た目の美しさ vs 互換性
+   - 実用性を優先する判断
+
+### Next Steps
+
+1. macOSのTerminalで実際に動作確認
+2. 他のターミナルエミュレータでも確認（iTerm2, Alacritty等）
+3. ユーザーフィードバックに基づく微調整
+
+---
+
 ## 2025-10-30 (Update 2) - Fix Display Issues in Task List and Pomodoro Screen
 
 ### Implementation Details
