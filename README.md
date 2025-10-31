@@ -1,4 +1,4 @@
-# koto - ToDo Management CLI
+# koto CLI - ToDo Management CLI
 
 ![koto CLI Screenshot](docs/images/koto-cli.png)
 
@@ -14,11 +14,10 @@ It provides a comfortable task management experience with a beautiful terminal U
 - 🎨 **Rich TUI** - Beautiful terminal interface with Bubbletea/Lipgloss
 - ⚡ **Lightweight & Fast** - Pure Go (no CGO required) with fast startup
 - 📊 **Priority Management** - 3-level priority system (🔴High 🟡Medium 🟢Low)
-- 📅 **Due Date Management** - Set due dates with overdue warnings
 - 💾 **SQLite Storage** - Reliable local database for data persistence
-- 📤 **Export/Import** - Backup and migration in JSON format
+- 📤 **Export/Import** - Backup and migration in JSON format (Coming Soon 🚧)
 - ⌨️ **Vim-like Keybindings** - Comfortable navigation with j/k
-- 🔍 **Status Filtering** - Filter by pending/completed status
+- 🔍 **Status Filtering** - Filter by pending/completed status (Coming Soon 🚧)
 - 🍅 **Pomodoro Timer** - 25-minute timer to support focused work with automatic time tracking
 
 ## 📦 Installation
