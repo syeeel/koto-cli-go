@@ -1,160 +1,160 @@
-# koto リリースガイド
+# koto Release Guide
 
-このドキュメントでは、kotoの新しいバージョンをリリースする手順を説明します。
+This document describes the procedure for releasing new versions of koto.
 
-## 📋 リリース前チェックリスト
+## 📋 Pre-Release Checklist
 
-リリース前に、以下の項目を確認してください：
+Before releasing, verify the following items:
 
-- [ ] すべてのテストがパス (`go test ./...`)
-- [ ] コードがフォーマットされている (`go fmt ./...`)
-- [ ] リントエラーがない (`go vet ./...`)
-- [ ] CHANGELOG.mdが更新されている
-- [ ] ドキュメントが最新
-- [ ] ビルドが成功する (`go build -o bin/koto ./cmd/koto`)
-- [ ] **GoReleaserのローカルテストが成功する** (`goreleaser release --snapshot --clean`)
+- [ ] All tests pass (`go test ./...`)
+- [ ] Code is formatted (`go fmt ./...`)
+- [ ] No lint errors (`go vet ./...`)
+- [ ] CHANGELOG.md is updated
+- [ ] Documentation is up to date
+- [ ] Build succeeds (`go build -o bin/koto ./cmd/koto`)
+- [ ] **GoReleaser local test succeeds** (`goreleaser release --snapshot --clean`)
 
-## 🧪 ローカルでのテスト
+## 🧪 Local Testing
 
-本番リリース前に、GoReleaserの設定をローカルでテストできます：
+Before production release, you can test GoReleaser configuration locally:
 
 ```bash
-# スナップショットビルド（GitHubにリリースせずにローカルでビルド）
+# Snapshot build (build locally without releasing to GitHub)
 goreleaser release --snapshot --clean
 
-# 成功すると、dist/ディレクトリにバイナリが生成されます
+# On success, binaries are generated in the dist/ directory
 ls -la dist/
 
-# 各プラットフォーム向けのバイナリをテスト
+# Test binaries for each platform
 ./dist/koto_darwin_amd64_v1/koto --version
 ./dist/koto_linux_amd64_v1/koto --version
 ```
 
-**設定ファイルの検証のみ:**
+**Configuration file validation only:**
 
 ```bash
-# .goreleaser.yamlの構文チェック
+# Check .goreleaser.yaml syntax
 goreleaser check
 ```
 
-**ドライラン（何も実行せず、実行内容だけ表示）:**
+**Dry run (show what would be executed without actually executing):**
 
 ```bash
-# リリース時に何が起こるかを確認
+# See what happens during release
 goreleaser release --skip=publish --clean
 ```
 
-## 🚀 リリース手順
+## 🚀 Release Procedure
 
-### 1. バージョンの決定
+### 1. Determine Version
 
-[セマンティックバージョニング](https://semver.org/)に従ってバージョンを決定します：
+Decide the version following [Semantic Versioning](https://semver.org/):
 
-- **Major (X.0.0)**: 後方互換性のない変更
-- **Minor (x.Y.0)**: 後方互換性のある機能追加
-- **Patch (x.y.Z)**: 後方互換性のあるバグ修正
+- **Major (X.0.0)**: Breaking changes
+- **Minor (x.Y.0)**: Backward-compatible feature additions
+- **Patch (x.y.Z)**: Backward-compatible bug fixes
 
-例: `v1.2.3`
+Example: `v1.2.3`
 
-### 2. CHANGELOGの更新
+### 2. Update CHANGELOG
 
-`CHANGELOG.md`に変更内容を記録します：
+Record changes in `CHANGELOG.md`:
 
 ```markdown
 ## [1.0.0] - 2025-10-30
 
 ### Added
-- 新機能の説明
+- Description of new features
 
 ### Changed
-- 変更内容の説明
+- Description of changes
 
 ### Fixed
-- 修正したバグの説明
+- Description of bug fixes
 ```
 
-### 3. タグの作成とプッシュ
+### 3. Create and Push Tag
 
 ```bash
-# 新しいバージョンをタグ
+# Tag the new version
 git tag -a v1.0.0 -m "Release v1.0.0"
 
-# タグをリモートにプッシュ
+# Push the tag to remote
 git push origin v1.0.0
 ```
 
-### 4. 自動リリース
+### 4. Automatic Release
 
-タグをプッシュすると、GitHub Actionsが自動的に以下を実行します：
+When you push a tag, GitHub Actions automatically executes the following:
 
-1. **テストの実行** - すべてのテストを実行
-2. **ビルド** - 各プラットフォーム向けにバイナリをビルド
+1. **Run Tests** - Execute all tests
+2. **Build** - Build binaries for each platform
    - macOS (Intel/Apple Silicon)
    - Linux (amd64/arm64)
    - Windows (amd64)
-3. **アーカイブの作成** - tar.gz/zip形式でアーカイブ
-4. **GitHub Releasesへの公開** - リリースページにバイナリとchangelogを公開
-5. **チェックサムの生成** - セキュリティ検証用のチェックサムファイル作成
+3. **Create Archives** - Create archives in tar.gz/zip format
+4. **Publish to GitHub Releases** - Publish binaries and changelog to releases page
+5. **Generate Checksums** - Create checksum files for security verification
 
-### 5. リリースの確認
+### 5. Verify Release
 
-GitHub Actionsのワークフローが完了したら、以下を確認します：
+After GitHub Actions workflow completes, verify the following:
 
-1. [Releases](https://github.com/syeeel/koto-cli-go/releases)ページを開く
-2. 新しいリリースが作成されていることを確認
-3. 各プラットフォーム向けのバイナリがアップロードされていることを確認
-4. changelogが正しく表示されていることを確認
+1. Open the [Releases](https://github.com/syeeel/koto-cli-go/releases) page
+2. Confirm new release is created
+3. Confirm binaries for each platform are uploaded
+4. Confirm changelog is displayed correctly
 
-### 6. リリースノートの編集（オプション）
+### 6. Edit Release Notes (Optional)
 
-必要に応じて、GitHubのリリースページでリリースノートを編集します：
+If necessary, edit release notes on GitHub's release page:
 
-- 主要な変更点の強調
-- 既知の問題の記載
-- アップグレード手順（破壊的変更がある場合）
-- スクリーンショットやGIFの追加
+- Highlight major changes
+- Document known issues
+- Upgrade instructions (if there are breaking changes)
+- Add screenshots or GIFs
 
-## 🔧 トラブルシューティング
+## 🔧 Troubleshooting
 
-### ビルドが失敗する
+### Build Fails
 
-GitHub Actionsのログを確認します：
+Check GitHub Actions logs:
 
-1. [Actions](https://github.com/syeeel/koto-cli-go/actions)ページを開く
-2. 失敗したワークフローをクリック
-3. エラーメッセージを確認
+1. Open the [Actions](https://github.com/syeeel/koto-cli-go/actions) page
+2. Click on the failed workflow
+3. Check error messages
 
-よくある原因：
-- テストの失敗
-- 依存関係の問題 (`go.mod`/`go.sum`の不整合)
-- ビルドエラー
+Common causes:
+- Test failures
+- Dependency issues (`go.mod`/`go.sum` inconsistencies)
+- Build errors
 
-### タグを間違えた場合
+### Wrong Tag
 
-ローカルとリモートのタグを削除します：
+Delete local and remote tags:
 
 ```bash
-# ローカルのタグを削除
+# Delete local tag
 git tag -d v1.2.3
 
-# リモートのタグを削除
+# Delete remote tag
 git push origin :refs/tags/v1.2.3
 ```
 
-その後、正しいタグを作成し直します。
+Then recreate the correct tag.
 
-### リリースを削除したい場合
+### Delete Release
 
-1. GitHubのReleasesページでリリースを削除
-2. タグも削除（上記参照）
+1. Delete the release on GitHub's Releases page
+2. Also delete the tag (see above)
 
-## 📦 成果物
+## 📦 Artifacts
 
-リリース後、以下が利用可能になります：
+After release, the following become available:
 
 ### GitHub Releases
 
-すべてのプラットフォーム向けのバイナリ：
+Binaries for all platforms:
 
 ```
 koto_v1.2.3_darwin_amd64.tar.gz
@@ -165,117 +165,117 @@ koto_v1.2.3_windows_amd64.zip
 checksums.txt
 ```
 
-### install.shスクリプト
+### install.sh Script
 
-ユーザーは以下のコマンドでインストールできます：
+Users can install with the following command:
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/syeeel/koto-cli-go/main/install.sh | sh
 ```
 
-このスクリプトは自動的に最新リリースを取得してインストールします。
+This script automatically fetches and installs the latest release.
 
 ### Go install
 
-Go環境があるユーザーは以下でインストールできます：
+Users with Go environment can install with:
 
 ```bash
 go install github.com/syeeel/koto-cli-go/cmd/koto@latest
 ```
 
-## 🍺 Homebrew Tap のセットアップ
+## 🍺 Homebrew Tap Setup
 
-Homebrew Tapを使用すると、macOSユーザーが簡単にインストールできるようになります。
+Using Homebrew Tap makes it easy for macOS users to install.
 
-### 初回セットアップ手順
+### Initial Setup Procedure
 
-#### 1. homebrew-tapリポジトリを作成
+#### 1. Create homebrew-tap Repository
 
-GitHubで新しいパブリックリポジトリを作成します：
+Create a new public repository on GitHub:
 
-- リポジトリ名: **`homebrew-tap`** （必須の命名規則）
-- オーナー: `syeeel`
-- 公開設定: Public
-- 初期化: README を追加（オプション）
+- Repository name: **`homebrew-tap`** (required naming convention)
+- Owner: `syeeel`
+- Visibility: Public
+- Initialize: Add README (optional)
 
 ```bash
-# CLIで作成する場合（gh コマンドが必要）
+# Create via CLI (requires gh command)
 gh repo create syeeel/homebrew-tap --public --description "Homebrew tap for koto"
 ```
 
-#### 2. Personal Access Token を作成
+#### 2. Create Personal Access Token
 
-1. GitHub で [Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens)
-2. "Generate new token (classic)" をクリック
-3. 設定:
+1. On GitHub, go to [Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens)
+2. Click "Generate new token (classic)"
+3. Settings:
    - **Note**: `GoReleaser - koto homebrew-tap`
-   - **Expiration**: 好みに応じて（推奨: No expiration または 1 year）
+   - **Expiration**: As preferred (recommended: No expiration or 1 year)
    - **Select scopes**:
-     - ✅ `public_repo` （パブリックリポジトリの場合）
-     - または ✅ `repo` （プライベートリポジトリの場合）
-4. "Generate token" をクリック
-5. **トークンをコピー**（このページを離れると二度と表示されません）
+     - ✅ `public_repo` (for public repositories)
+     - or ✅ `repo` (for private repositories)
+4. Click "Generate token"
+5. **Copy the token** (it won't be shown again once you leave this page)
 
-#### 3. GitHub シークレットに追加
+#### 3. Add to GitHub Secrets
 
-1. [koto-cli-go リポジトリの Settings → Secrets and variables → Actions](https://github.com/syeeel/koto-cli-go/settings/secrets/actions)
-2. "New repository secret" をクリック
-3. 設定:
+1. Go to [koto-cli-go repository Settings → Secrets and variables → Actions](https://github.com/syeeel/koto-cli-go/settings/secrets/actions)
+2. Click "New repository secret"
+3. Settings:
    - **Name**: `TAP_GITHUB_TOKEN`
-   - **Secret**: 上記でコピーしたトークン
-4. "Add secret" をクリック
+   - **Secret**: The token copied above
+4. Click "Add secret"
 
-#### 4. 設定ファイルの確認
+#### 4. Verify Configuration Files
 
-以下のファイルはすでに設定済みです：
+The following files are already configured:
 
-- ✅ `.goreleaser.yaml` - Homebrew Tap設定が有効
-- ✅ `.github/workflows/release.yml` - TAP_GITHUB_TOKEN を使用
+- ✅ `.goreleaser.yaml` - Homebrew Tap configuration enabled
+- ✅ `.github/workflows/release.yml` - Uses TAP_GITHUB_TOKEN
 
-#### 5. 動作確認
+#### 5. Verify Operation
 
-次回のリリース時（タグをプッシュ）に、GoReleaserが自動的に：
+On the next release (push tag), GoReleaser will automatically:
 
-1. `homebrew-tap` リポジトリに Formula を作成
-2. `Formula/koto.rb` ファイルを更新
-3. バージョン情報とダウンロードURLを自動更新
+1. Create Formula in `homebrew-tap` repository
+2. Update `Formula/koto.rb` file
+3. Automatically update version information and download URL
 
-#### 6. ユーザー向けインストール手順
+#### 6. User Installation Instructions
 
-セットアップ完了後、ユーザーは以下でインストールできます：
+After setup completion, users can install with:
 
 ```bash
 brew tap syeeel/tap
 brew install koto
 ```
 
-### トラブルシューティング
+### Troubleshooting
 
-**エラー: `401 Bad credentials`**
+**Error: `401 Bad credentials`**
 
-- TAP_GITHUB_TOKEN が正しく設定されているか確認
-- トークンに `public_repo` または `repo` スコープがあるか確認
-- トークンの有効期限が切れていないか確認
+- Verify TAP_GITHUB_TOKEN is correctly set
+- Verify token has `public_repo` or `repo` scope
+- Verify token has not expired
 
-**エラー: `404 Not Found`**
+**Error: `404 Not Found`**
 
-- `homebrew-tap` リポジトリが存在するか確認
-- リポジトリが Public になっているか確認
+- Verify `homebrew-tap` repository exists
+- Verify repository is Public
 
-**Formula が更新されない**
+**Formula Not Updated**
 
-- GitHub Actions のログを確認
-- `.goreleaser.yaml` の `repository.owner` と `repository.name` が正しいか確認
+- Check GitHub Actions logs
+- Verify `repository.owner` and `repository.name` in `.goreleaser.yaml` are correct
 
-## 📝 リリーススケジュール（例）
+## 📝 Release Schedule (Example)
 
-プロジェクトの規模に応じて、リリーススケジュールを決めることができます：
+Depending on project scale, you can decide on a release schedule:
 
-- **Major**: 年1-2回（大きな機能追加や破壊的変更）
-- **Minor**: 月1-2回（新機能追加）
-- **Patch**: 随時（バグ修正）
+- **Major**: 1-2 times per year (major features or breaking changes)
+- **Minor**: 1-2 times per month (new features)
+- **Patch**: As needed (bug fixes)
 
-## 🔗 参考リンク
+## 🔗 References
 
 - [GoReleaser Documentation](https://goreleaser.com)
 - [Semantic Versioning](https://semver.org/)
@@ -284,4 +284,4 @@ brew install koto
 
 ---
 
-リリースプロセスに問題がある場合は、[Issues](https://github.com/syeeel/koto-cli-go/issues)で報告してください。
+If you have any issues with the release process, please report them in [Issues](https://github.com/syeeel/koto-cli-go/issues).
