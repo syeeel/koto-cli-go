@@ -65,15 +65,12 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
 		ctx := context.Background()
 
 		// Execute command
+		// Note: /export and /import are now handled via dedicated views in handleEnter()
 		switch command {
 		case "/done":
 			return handleDoneCommand(ctx, svc, args)
 		case "/list":
 			return handleListCommand(ctx, svc, args)
-		case "/export":
-			return handleExportCommand(ctx, svc, args)
-		case "/import":
-			return handleImportCommand(ctx, svc, args)
 		case "/help":
 			return commandExecutedMsg{message: "Press '?' to view help"}
 		case "/exit":
@@ -152,37 +149,6 @@ func handleListCommand(ctx context.Context, svc *service.TodoService, args []str
 	}
 
 	return commandExecutedMsg{message: fmt.Sprintf("Showing %d todos", len(todos))}
-}
-
-// handleExportCommand handles the /export command
-func handleExportCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
-	filepath := "todos_export.json"
-	if len(args) > 0 {
-		filepath = args[0]
-	}
-
-	err := svc.ExportToJSON(ctx, filepath)
-	if err != nil {
-		return commandExecutedMsg{err: err}
-	}
-
-	return commandExecutedMsg{message: fmt.Sprintf("Exported todos to %s", filepath)}
-}
-
-// handleImportCommand handles the /import command
-func handleImportCommand(ctx context.Context, svc *service.TodoService, args []string) commandExecutedMsg {
-	if len(args) != 1 {
-		return commandExecutedMsg{err: errors.New("usage: /import <filepath>")}
-	}
-
-	filepath := args[0]
-
-	err := svc.ImportFromJSON(ctx, filepath)
-	if err != nil {
-		return commandExecutedMsg{err: err}
-	}
-
-	return commandExecutedMsg{message: fmt.Sprintf("Imported todos from %s", filepath)}
 }
 
 // tickPomodoro creates a command that waits 1 second and sends a tick message

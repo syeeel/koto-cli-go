@@ -15,7 +15,7 @@ It provides a comfortable task management experience with a beautiful terminal U
 - ⚡ **Lightweight & Fast** - Pure Go (no CGO required) with fast startup
 - 📊 **Priority Management** - 3-level priority system (🔴High 🟡Medium 🟢Low)
 - 💾 **SQLite Storage** - Reliable local database for data persistence
-- 📤 **Export/Import** - Backup and migration in JSON format (Coming Soon 🚧)
+- 📤 **Export/Import** - Backup and migration in JSON format
 - ⌨️ **Vim-like Keybindings** - Comfortable navigation with j/k
 - 🔍 **Status Filtering** - Filter by pending/completed status (Coming Soon 🚧)
 - 🍅 **Pomodoro Timer** - 25-minute timer to support focused work with automatic time tracking

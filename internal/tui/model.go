@@ -26,6 +26,10 @@ const (
 	ViewModePomodoro
 	// ViewModeDetail shows the todo detail screen
 	ViewModeDetail
+	// ViewModeExport shows the export screen
+	ViewModeExport
+	// ViewModeImport shows the import screen
+	ViewModeImport
 )
 
 // Model represents the Bubbletea model for the TUI
@@ -63,6 +67,19 @@ type Model struct {
 
 	// Detail view state
 	detailTodoID int64 // ID of todo being displayed in detail view
+
+	// Export view state
+	exportFilePath string // Path for export file
+	exportSuccess  bool   // Whether export was successful
+	exportMessage  string // Success or error message for export
+
+	// Import view state
+	importFilePath string // Path for import file
+	importStep     int    // 0: file input, 1: confirmation, 2: executing, 3: complete
+	importPreview  int    // Number of todos to be imported (for confirmation)
+	importSuccess  bool   // Whether import was successful
+	importMessage  string // Success or error message for import
+	importCount    int    // Number of todos imported
 }
 
 // NewModel creates a new TUI model

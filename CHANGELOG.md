@@ -7,8 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2025-11-01
+
+### Added
+- **Export Feature**: Added dedicated export screen with interactive file path selection
+  - Default file path with timestamp: `~/.koto/export_YYYYMMDD_HHMMSS.json`
+  - Success screen displaying file location, todo count, and file size
+  - Accessible via `/export` command
+- **Import Feature**: Added multi-step import flow with confirmation
+  - File path input with validation
+  - Preview screen showing number of todos to import
+  - Confirmation step before actual import
+  - Success/failure summary screen
+  - Accessible via `/import` command
+
 ### Changed
 - **Recent Todos Display**: Increased maximum character count for task titles from 15 to 22 characters (1.5x increase)
+- **Export/Import Commands**: Now use dedicated interactive screens instead of inline execution
 
 ### Removed
 - **Unnecessary File**: Removed `--help` file from repository
@@ -16,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - **README.md**: Translated to English for global audience
 - **CHANGELOG.md**: Translated to English for global audience
+
+### Technical
+- `internal/tui/model.go`: Added `ViewModeExport` and `ViewModeImport` view modes, added export/import state fields
+- `internal/tui/views.go`: Implemented `renderExportView()` and `renderImportView()` functions
+- `internal/tui/update.go`: Added key handling for export/import views, implemented `handleExportEnter()` and `handleImportEnter()` helpers
+- `internal/tui/commands.go`: Removed old inline export/import command handlers
 
 ## [1.0.7] - 2025-10-30
 

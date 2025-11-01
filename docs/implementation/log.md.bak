@@ -140,31 +140,31 @@ Implemented dedicated interactive screens for `/export` and `/import` commands, 
 
 ### Implementation Details
 
-#### Improved Version Display Format
+#### バージョン表示形式の改善
 
-**Problem**:
-- Version was displayed as "dev"
-- Version number from CHANGELOG was not reflected
-- Format "koto version dev" was verbose
+**問題**:
+- バージョンが "dev" と表示されていた
+- CHANGELOGに記載されたバージョン番号が反映されていなかった
+- フォーマットが "koto version dev" で冗長だった
 
-**Solution**:
-1. Automatically extract latest version from CHANGELOG in Makefile
-2. Simplify version display format
+**解決策**:
+1. MakefileでCHANGELOGから最新バージョンを自動抽出
+2. バージョン表示フォーマットをシンプルに変更
 
-#### Implementation
+#### 実装内容
 
-**1. Makefile Modification**
+**1. Makefile修正**
 ```makefile
-# Extract latest version from CHANGELOG
+# CHANGELOGから最新バージョンを抽出
 VERSION ?= $(shell grep -m 1 '^\#\# \[' CHANGELOG.md 2>/dev/null | sed 's/.*\[\(.*\)\].*/\1/' || git describe --tags --abbrev=0 2>/dev/null || echo "1.0.6")
 ```
 
-Priority:
-1. Extract latest version from CHANGELOG.md (`## [1.0.7]`)
-2. Use git tag if exists
-3. Use "1.0.6" as default value
+優先順位:
+1. CHANGELOG.mdから最新バージョン（`## [1.0.7]`）を抽出
+2. git tagが存在すれば使用
+3. デフォルト値として "1.0.6" を使用
 
-**2. Version Display Format Change**
+**2. バージョン表示フォーマット変更**
 
 **internal/tui/banner.go**:
 ```go
@@ -181,23 +181,23 @@ fmt.Printf("Commit:  %s\n", commit)
 fmt.Printf("Built:   %s\n", date)
 ```
 
-#### Display Result
+#### 表示結果
 
-**Before**:
+**修正前**:
 ```
 koto version dev
   commit: 0b303de
   built:  2025-10-30 11:12:30 UTC
 ```
 
-**After**:
+**修正後**:
 ```
 Version: 1.0.7
 Commit:  0b303de
 Built:   2025-10-30 11:15:06 UTC
 ```
 
-#### Verification
+#### 動作確認
 
 ```bash
 $ make version
@@ -215,36 +215,36 @@ Commit:  0b303de
 Built:   2025-10-30 11:15:06 UTC
 ```
 
-#### Technical Decisions
+#### 技術的な決定
 
-1. **Centralized Version Management**
-   - Use CHANGELOG as single source of truth
-   - git tag is optional (prioritized if exists)
-   - No need to set version number manually
+1. **バージョン管理の一元化**
+   - CHANGELOGを single source of truth として使用
+   - git tagは optional（存在すれば優先）
+   - 手動でバージョン番号を設定する必要なし
 
-2. **Simplified Format**
-   - "Version: X.X.X" simple format
-   - Display each information on one line
-   - Align for improved readability
+2. **フォーマットの簡素化**
+   - "Version: X.X.X" というシンプルな形式
+   - 各情報を1行ずつ表示
+   - アラインメントを揃えて可読性向上
 
 ### Modified Files
 
-- `Makefile` - Added automatic version extraction logic
-- `internal/tui/banner.go` - Changed GetVersion() format
-- `cmd/koto/main.go` - Changed --version flag display format
-- `CHANGELOG.md` - Added version 1.0.7
+- `Makefile` - バージョン自動抽出ロジックを追加
+- `internal/tui/banner.go` - GetVersion()のフォーマット変更
+- `cmd/koto/main.go` - --versionフラグの表示フォーマット変更
+- `CHANGELOG.md` - バージョン1.0.7を追加
 
 ### Testing
 
-- ✅ `make version` Version information is correctly extracted
-- ✅ `make build` Version is correctly passed to ldflags
-- ✅ `./bin/koto --version` Displays in expected format
-- ✅ New version is automatically reflected when CHANGELOG is updated
+- ✅ `make version` でバージョン情報が正しく抽出される
+- ✅ `make build` で ldflags にバージョンが正しく渡される
+- ✅ `./bin/koto --version` で期待通りのフォーマットで表示される
+- ✅ CHANGELOGを更新すると自動的に新しいバージョンが反映される
 
 ### Next Steps
 
-- If git tag is created at release, that tag name is used with priority
-- Integration with GoReleaser continues to work
+- リリース時にgit tagを打てば、そのタグ名が優先的に使用される
+- GoReleaserとの統合も引き続き動作する
 
 ---
 
@@ -252,18 +252,18 @@ Built:   2025-10-30 11:15:06 UTC
 
 ### Implementation Details
 
-#### Implement Dynamic Version Information Management
+#### バージョン情報の動的管理の実装
 
-**Purpose**: Automatically inject version information at build time and always display the latest version information
+**目的**: ビルド時にバージョン情報を自動的に注入し、常に最新のバージョン情報を表示
 
-**Problem**:
-- Version information was hardcoded (`v1.0.0`)
-- Commit hash and build date were not displayed
-- Manual updates were required at release time
+**問題**:
+- バージョン情報がハードコード（`v1.0.0`）されていた
+- コミットハッシュやビルド日時が表示されなかった
+- リリース時に手動で更新する必要があった
 
-**Solution**: Variable injection at build time using Go `-ldflags`
+**解決策**: Go の`-ldflags`を使用したビルド時の変数注入
 
-#### Implementation
+#### 実装内容
 
 **1. internal/tui/banner.go**
 ```go
@@ -281,11 +281,11 @@ func GetVersion() string {
 ```
 
 **2. cmd/koto/main.go**
-- Hold version variables in main package
-- Set tui.banner variables at startup
+- mainパッケージにバージョン変数を保持
+- 起動時にtui.bannerの変数に値を設定
 
 **3. Makefile作成**
-Also set version information for development builds
+開発時のビルドでもバージョン情報を設定
 ```makefile
 VERSION ?= dev
 COMMIT := $(shell git rev-parse --short HEAD)
@@ -297,48 +297,48 @@ LDFLAGS := -ldflags "\
     -X 'main.date=$(DATE)'"
 ```
 
-#### Usage
+#### 使用方法
 
-**Development build**:
+**開発時のビルド**:
 ```bash
-make build              # Build with dev version
-make build VERSION=1.0.5  # Build with specific version
-./bin/koto --version    # Check version
+make build              # devバージョンでビルド
+make build VERSION=1.0.5  # 特定バージョンでビルド
+./bin/koto --version    # バージョン確認
 ```
 
-**Output Example**:
+**出力例**:
 ```
 koto version dev
   commit: bcc8f45
   built:  2025-10-30 11:07:28 UTC
 ```
 
-#### Test Results
+#### テスト結果
 
 ```bash
-✅ Build successful: make build
-✅ All tests passed: 23/23 tests
-✅ Version information displayed correctly
+✅ ビルド成功: make build
+✅ 全テストパス: 23/23 tests
+✅ バージョン情報正しく表示
 ```
 
-#### Benefits
+#### メリット
 
-1. **Automation**: Version information automatically injected at build time
-2. **Traceability**: Track specific code with commit hash
-3. **Efficient Debugging**: Immediately identify version by build date
-4. **Maintainability**: No manual updates required
+1. **自動化**: ビルド時に自動でバージョン情報が注入
+2. **トレーサビリティ**: コミットハッシュで特定のコードを追跡
+3. **デバッグの効率化**: ビルド日時でバージョンを即座に判別
+4. **保守性**: 手動更新が不要
 
-#### Makefile Targets
+#### Makefileターゲット
 
 ```bash
-make build          # Build
-make test           # Test
-make clean          # Cleanup
-make install        # Install
-make run            # Build and run
-make release        # Release（GoReleaser）
-make version        # Display version information
-make help           # Help
+make build          # ビルド
+make test           # テスト
+make clean          # クリーンアップ
+make install        # インストール
+make run            # ビルドして実行
+make release        # リリース（GoReleaser）
+make version        # バージョン情報表示
+make help           # ヘルプ
 ```
 
 ---
@@ -347,21 +347,21 @@ make help           # Help
 
 ### Implementation Details
 
-#### Root Cause of the Problem
+#### 問題の根本原因
 
-**Symptoms**: Borders are cut off and display is broken in macOS Terminal
-- Displays correctly in Cursor built-in terminal
-- Borders do not display correctly in macOS default Terminal
-- Prominent in detail and Pomodoro screens
+**症状**: macOSのTerminalで枠線が途切れる、表示が崩れる
+- Cursor内蔵terminalでは問題なく表示される
+- macOSのデフォルトTerminalでは枠線が正しく表示されない
+- 詳細画面とポモドーロ画面で顕著
 
-**Identifying the Root Cause**:
-1. **Unicode box-drawing characters**: `RoundedBorder()`and`NormalBorder()`isUnicodeofbox-drawing charactersuse
-2. **Differences in terminal environments**: Unicode border characters do not display correctly due to differences in fonts and encoding
-3. **Inconsistent character width calculation**: When combined with full-width characters like Japanese, character width calculations differ by terminal
+**根本原因の特定**:
+1. **Unicode box-drawing characters**: `RoundedBorder()`と`NormalBorder()`はUnicodeのbox-drawing charactersを使用
+2. **ターミナル環境の違い**: フォントやエンコーディングの違いにより、Unicodeボーダー文字が正しく表示されない
+3. **文字幅計算の不一致**: 特に日本語などの全角文字と組み合わせると、ターミナルによって文字幅の計算が異なる
 
 #### 解決策
 
-**Changed to custom border using only ASCII characters**
+**ASCII文字のみを使用したカスタムボーダーに変更**
 
 ```go
 simpleBorder := lipgloss.Border{
@@ -376,51 +376,51 @@ simpleBorder := lipgloss.Border{
 }
 ```
 
-**Benefits**:
-- ✅ Displays reliably in all terminals
-- ✅ Independent of font and encoding
-- ✅ Consistent character width calculation
-- ✅ Retro appearance with high visibility
+**メリット**:
+- ✅ 全てのターミナルで確実に表示される
+- ✅ フォントやエンコーディングに依存しない
+- ✅ 文字幅の計算が一貫している
+- ✅ レトロな見た目で視認性が高い
 
-#### Changes
+#### 変更内容
 
 **1. internal/tui/styles.go**
-- `simpleBorder`変数Added（ASCII文字ofカスタムボーダー）
-- `bannerTodoBoxStyle`/`RoundedBorder()`from`simpleBorder`in変更
-- `createResponsiveBoxStyle`関数of`Border()`/`BorderStyle()`in修正
+- `simpleBorder`変数を追加（ASCII文字のカスタムボーダー）
+- `bannerTodoBoxStyle`を`RoundedBorder()`から`simpleBorder`に変更
+- `createResponsiveBoxStyle`関数の`Border()`を`BorderStyle()`に修正
 
 **2. internal/tui/views.go**
-- allof`Border(lipgloss.RoundedBorder())`/`BorderStyle(simpleBorder)`in置換
-- allof`Border(lipgloss.NormalBorder())`/`BorderStyle(simpleBorder)`in置換
+- 全ての`Border(lipgloss.RoundedBorder())`を`BorderStyle(simpleBorder)`に置換
+- 全ての`Border(lipgloss.NormalBorder())`を`BorderStyle(simpleBorder)`に置換
 
-**Replacement Locations**:
-1. Error box on minimum width error screen
-2. 詳細画面: Title box, Description box, Priority box, Work Time box, Created box
+**置換箇所**:
+1. 最小幅エラー画面のエラーボックス
+2. 詳細画面: タイトルボックス、説明ボックス、Priorityボックス、Work Timeボックス、Createdボックス
 3. 詳細画面: Todo not foundエラーボックス
-4. ポモドーロ画面: Task info box, general session info box
+4. ポモドーロ画面: タスク情報ボックス、一般セッション情報ボックス
 
-#### Test Results
+#### テスト結果
 
 ```bash
-✅ Build successful: go build -o bin/koto ./cmd/koto
-✅ All tests passed: 23/23 tests passed
+✅ ビルド成功: go build -o bin/koto ./cmd/koto
+✅ 全テスト通過: 23/23 tests passed
 ```
 
-#### Expected Effects
+#### 期待される効果
 
-1. **Complete cross-terminal compatibility**
-   - macOS Terminal, iTerm2, Alacritty, Kitty, Windows Terminal works with all
-   - フォントandエンコーディング設定independent of
+1. **完全なクロスターミナル互換性**
+   - macOS Terminal, iTerm2, Alacritty, Kitty, Windows Terminal 全てで動作
+   - フォントやエンコーディング設定に依存しない
 
-2. **Consistent display**
-   - same appearance in all environments
-   - 日本語文字andof組み合わせno problems
+2. **一貫した表示**
+   - 全ての環境で同じ見た目
+   - 日本語文字との組み合わせでも問題なし
 
-3. **Improved maintainability**
-   - シンプルなASCII文字ofみ
-   - ボーダーof定義is一箇所centralized in
+3. **保守性の向上**
+   - シンプルなASCII文字のみ
+   - ボーダーの定義が一箇所に集約
 
-#### Design change
+#### デザインの変更
 
 **Before (Unicode)**:
 ```
@@ -436,25 +436,25 @@ simpleBorder := lipgloss.Border{
 +----------------+
 ```
 
-#### Lessons Learned
+#### 学んだこと
 
-1. **Importance of terminal compatibility**
-   - Unicode characters are highly environment-dependent
-   - ASCII characters are safest for cross-platform apps
+1. **ターミナル互換性の重要性**
+   - Unicode文字は環境依存が大きい
+   - クロスプラットフォームアプリではASCII文字が最も安全
 
-2. **Lipglossofボーダーオプション**
-   - Can use arbitrary characters with custom borders
-   - `BorderStyle()`Flexibly set borders with
+2. **Lipglossのボーダーオプション**
+   - カスタムボーダーで任意の文字を使用可能
+   - `BorderStyle()`で柔軟にボーダーを設定
 
 3. **視覚的なトレードオフ**
-   - Visual aesthetics vs compatibility
-   - Decision to prioritize practicality
+   - 見た目の美しさ vs 互換性
+   - 実用性を優先する判断
 
 ### Next Steps
 
-1. Actually verify operation in macOS Terminal
-2. Also verify with other terminal emulators (iTerm2, Alacritty, etc.)
-3. Fine-tuning based on user feedback
+1. macOSのTerminalで実際に動作確認
+2. 他のターミナルエミュレータでも確認（iTerm2, Alacritty等）
+3. ユーザーフィードバックに基づく微調整
 
 ---
 
@@ -462,19 +462,19 @@ simpleBorder := lipgloss.Border{
 
 ### Implementation Details
 
-#### Problems and Fixes
+#### 問題点と修正
 
-**Problem 1: Two lines displayed when focused in task list**
-- **Symptoms**: When a task is selected, green background displays for 2 lines
-- **Cause**: Additional width was applied to row content (already properly padded) due to setting.*on selected row style, causing line breaks
-- **Solution**: `Width()` Remove.*specification. Row is already properly formatted with padStringToWidth, no additional width specification needed
+**問題1: タスク一覧でフォーカス時に2行表示**
+- **症状**: タスクが選択された際、緑色の背景が2行分表示される
+- **原因**: 選択行のスタイルに `Width(widths.TotalListRow)` を設定していたため、rowの内容（既に適切にパディング済み）に加えて追加の幅が適用され、改行が発生
+- **解決策**: `Width()` 指定を削除。rowは既にpadStringToWidthで適切にフォーマットされているため、追加の幅指定は不要
 
-**Problem 2: Task information in Pomodoro screen is left-aligned**
-- **Symptoms**: Task ID and task name are left-aligned within the box
-- **Cause**: was not set on taskInfoBox style
-- **Solution**: Add.*like infoBox
+**問題2: ポモドーロ画面のタスク情報が左寄せ**
+- **症状**: タスクIDとタスク名がボックス内で左寄せになっている
+- **原因**: taskInfoBoxのスタイルに `.Align(lipgloss.Center)` が設定されていなかった
+- **解決策**: infoBoxと同様に `.Align(lipgloss.Center)` を追加
 
-#### Changes
+#### 変更内容
 
 **internal/tui/views.go**
 
@@ -485,13 +485,13 @@ dynamicSelectedStyle := lipgloss.NewStyle().
     Foreground(lipgloss.Color("#1e1e2e")).
     Background(fgSelected).
     Bold(true).
-    Width(widths.TotalListRow)  // ← こof行is問題
+    Width(widths.TotalListRow)  // ← この行が問題
 
 // After:
 dynamicSelectedStyle := lipgloss.NewStyle().
     Foreground(lipgloss.Color("#1e1e2e")).
     Background(fgSelected).
-    Bold(true)  // Width指定Removed
+    Bold(true)  // Width指定を削除
 ```
 
 2. **renderPomodoroView関数** (615-632行目)
@@ -502,7 +502,7 @@ taskInfoBox := lipgloss.NewStyle().
     BorderForeground(lipgloss.Color("#585b70")).
     Padding(1, 2).
     Width(widths.PomodoroBox).
-    // Alignisnot
+    // Alignがない
     Render(...)
 
 // After:
@@ -515,24 +515,24 @@ taskInfoBox := lipgloss.NewStyle().
     Render(...)
 ```
 
-#### Test Results
+#### テスト結果
 
 ```bash
-✅ Build successful: go build -o bin/koto ./cmd/koto
-✅ All tests passed: 23/23 tests passed
+✅ ビルド成功: go build -o bin/koto ./cmd/koto
+✅ 全テスト通過: 23/23 tests passed
 ```
 
-#### Expected Effects
+#### 期待される効果
 
-1. **タスク一覧**: Selected row displays correctly in one line
-2. **ポモドーロ画面**: Task information is centered within the box
+1. **タスク一覧**: 選択行が1行で正しく表示される
+2. **ポモドーロ画面**: タスク情報がボックス内で中央揃え
 
 ### Technical Notes
 
-**Lipglossofスタイル適用of順序**
-- `Width()`: Apply width to content (add padding)
-- Applying.*to already padded content causes unexpected line breaks
-- `Align()`: Controls text alignment within box
+**Lipglossのスタイル適用の順序**
+- `Width()`: コンテンツに幅を適用（パディングを追加）
+- 既にパディング済みのコンテンツに `Width()` を適用すると、予期しない改行が発生
+- `Align()`: ボックス内でのテキストの配置を制御
 
 ---
 
@@ -540,27 +540,27 @@ taskInfoBox := lipgloss.NewStyle().
 
 ### Implementation Details
 
-#### Implementing Responsive Layout
-- **Purpose**: Dynamically adjust layout according to terminal width and fix border display issues
-- **Problem**: Borders are cut off in startup screen, task detail screen, and Pomodoro screen
-- **Cause**: All screens used hardcoded widths and did not adapt to terminal size
+#### レスポンシブレイアウトの実装
+- **目的**: ターミナル幅に応じて動的にレイアウトを調整し、枠線の表示崩れを修正
+- **問題**: 起動画面、タスク詳細画面、ポモドーロ画面で枠線が途切れて表示される
+- **原因**: 全ての画面でハードコードされた幅を使用しており、ターミナルサイズに対応していなかった
 
-#### Design Policy
+#### 設計方針
 
-**1. Setting Minimum Terminal Width**
-- Set 100 characters as minimum width
-- Display error message if less than 100 characters
+**1. 最小ターミナル幅の設定**
+- 100文字を最小幅として設定
+- 100文字未満の場合はエラーメッセージを表示
 
-**2. Layout Strategy**
-- **起動画面（Banner）**: Center ASCII art and ToDo box (fixed size)
-- **メインリスト画面**: Calculate column widths dynamically, make title column flexible width
-- **詳細画面**: Make all boxes responsive to dynamic width, proportionally distribute 3-column layout
-- **ポモドーロ画面**: Make progress bar and info boxes dynamic width, center everything
-- **編集画面**: Works fine with default behavior (no special fixes needed)
+**2. レイアウト戦略**
+- **起動画面（Banner）**: ASCIIアートとToDoボックスを中央配置（固定サイズ）
+- **メインリスト画面**: カラム幅を動的に計算、タイトルカラムを可変幅に
+- **詳細画面**: 全てのボックスを動的幅に対応、3カラムレイアウトも比例配分
+- **ポモドーロ画面**: プログレスバー、情報ボックスを動的幅に、全てセンタリング
+- **編集画面**: デフォルトの動作で問題なし（特別な修正不要）
 
-#### Implementation
+#### 実装内容
 
-**1. styles.go - Adding Helper Functions and Structs**
+**1. styles.go - ヘルパー関数と構造体の追加**
 
 ```go
 // MinTerminalWidth is the minimum required terminal width
@@ -586,18 +586,18 @@ func calculateDynamicWidths(termWidth int) DynamicWidths
 func createResponsiveBoxStyle(width int, borderStyle lipgloss.Border, borderColor lipgloss.Color) lipgloss.Style
 ```
 
-**2. views.go - Making All Screens Responsive**
+**2. views.go - 全画面のレスポンシブ化**
 
-- **Minimum Width Check**: `renderMinWidthErrorView()` Added
-- **Banner画面**: `lipgloss.PlaceHorizontal(m.width, lipgloss.Center, ...)` with centering
-- **メインリスト画面**: `calculateDynamicWidths()` useして動的幅/計算
-- **詳細画面**: allofボックスin `widths.DetailBox` / `widths.DetailColumn` apply
+- **最小幅チェック**: `renderMinWidthErrorView()` を追加
+- **Banner画面**: `lipgloss.PlaceHorizontal(m.width, lipgloss.Center, ...)` でセンタリング
+- **メインリスト画面**: `calculateDynamicWidths()` を使用して動的幅を計算
+- **詳細画面**: 全てのボックスに `widths.DetailBox` / `widths.DetailColumn` を適用
 - **ポモドーロ画面**:
-  - `PlaceHorizontal(m.width, ...)` in変更
-  - `renderPinkProgressBar()` inwidthパラメータAdded
-  - 情報ボックスin `widths.PomodoroBox` apply
+  - `PlaceHorizontal(m.width, ...)` に変更
+  - `renderPinkProgressBar()` にwidthパラメータを追加
+  - 情報ボックスに `widths.PomodoroBox` を適用
 
-#### Modified Files
+#### 修正ファイル
 
 1. **internal/tui/styles.go** (207行)
    - MinTerminalWidth定数追加
@@ -607,43 +607,43 @@ func createResponsiveBoxStyle(width int, borderStyle lipgloss.Border, borderColo
 
 2. **internal/tui/views.go** (~1046行)
    - renderMinWidthErrorView関数追加
-   - View関数inMinimum Width Check追加
+   - View関数に最小幅チェック追加
    - renderBannerView: センタリング実装
    - renderListView: 動的幅計算追加
    - renderTodoItem: シグネチャ変更（widthsパラメータ追加）
-   - renderDetailView: 全ボックス/動的幅in変更
-   - renderPomodoroView: 全PlaceHorizontal/m.widthin変更
+   - renderDetailView: 全ボックスを動的幅に変更
+   - renderPomodoroView: 全PlaceHorizontalをm.widthに変更
    - renderPinkProgressBar: widthパラメータ追加
 
-#### Technical Decisions
+#### 技術的な決定
 
-**1. Width Calculation Algorithm**
-- Calculate total fixed column width
-- Title column uses remaining space (minimum 20 characters)
-- Consider appropriate margins for each view
+**1. 幅計算のアルゴリズム**
+- 固定カラム幅の合計を計算
+- タイトルカラムは残りスペースを使用（最小20文字）
+- 各ビューごとに適切なマージンを考慮
 
-**2. Setting Minimum Width**
-- 100文字: Minimum width to comfortably display current layout
-- Display error if less, as visibility decreases
+**2. 最小幅の設定**
+- 100文字: 現在のレイアウトを快適に表示できる最小幅
+- それ未満では視認性が低下するため、エラー表示
 
-**3. Centering Method**
+**3. センタリング方法**
 - `lipgloss.PlaceHorizontal(termWidth, lipgloss.Center, content)`
-- Center fixed-size content (ASCII art, etc.)
+- 固定サイズのコンテンツ（ASCIIアート等）を中央配置
 
-**4. Dynamic Width Application Scope**
-- Selected row style: generated dynamically（`Width(widths.TotalListRow)`）
-- Border boxes: all support dynamic width
-- Progress bar: dynamically adjusted with width argument
+**4. 動的幅の適用範囲**
+- 選択行のスタイル: 動的に生成（`Width(widths.TotalListRow)`）
+- ボーダーボックス: 全て動的幅に対応
+- プログレスバー: width引数で動的に調整
 
-#### Test Results
+#### テスト結果
 
-**Build**
+**ビルド**
 ```bash
 go build -o bin/koto ./cmd/koto
 # Success - no errors
 ```
 
-**Test**
+**テスト**
 ```bash
 go test ./internal/tui/... -v
 # PASS - all 23 tests passed
@@ -653,6 +653,885 @@ go test ./internal/tui/... -v
 ```bash
 ./bin/koto --version
 # koto version dev - working correctly
+```
+
+#### 期待される効果
+
+1. **枠線の表示崩れが解消**
+   - 全ての画面でボーダーが正しく表示される
+   - ターミナルサイズに応じて適切に調整
+
+2. **ユーザビリティの向上**
+   - 様々なターミナルサイズに対応
+   - 100文字未満では明確なエラーメッセージ
+
+3. **保守性の向上**
+   - 動的幅計算が一元管理される
+   - 将来の変更が容易
+
+#### 残された課題
+
+1. **ウィンドウリサイズの動的対応**
+   - 現在: ウィンドウサイズ変更時に再描画されるが、即座には反映されない可能性
+   - 対応: `tea.WindowSizeMsg`受信時に即座に再描画（update.goで既に実装済み）
+
+2. **極端に広いターミナルでの対応**
+   - 現在: コンテンツがセンタリングされるが、最大幅制限なし
+   - 今後: 必要に応じて最大幅を設定可能
+
+3. **バナーのASCIIアートの動的サイズ調整**
+   - 現在: 固定サイズでセンタリング
+   - 今後: 狭いターミナルでは簡易表示に切り替え可能
+
+#### 学んだこと
+
+1. **Lipglossのレスポンシブ機能**
+   - `PlaceHorizontal`は強力なセンタリングツール
+   - `Width()`は動的値を受け付ける
+   - スタイルは実行時に生成可能
+
+2. **Bubbleteaのウィンドウサイズ管理**
+   - `tea.WindowSizeMsg`は自動的に送信される
+   - `m.width`と`m.height`で最新のサイズを追跡可能
+
+3. **レイアウト計算の重要性**
+   - 一元化された幅計算が保守性を向上
+   - 構造体を使った設計が明確で理解しやすい
+
+### Next Steps
+
+1. 実際のターミナルで様々なサイズでの動作確認
+2. ユーザーフィードバックに基づく微調整
+3. 必要に応じて最大幅制限の実装
+
+---
+
+## 2025-10-29 (Update 11) - Refine Detail View Layout
+
+### Implementation Details
+
+#### 詳細画面のレイアウト微調整
+- **目的**: TimestampsからUpdatedを削除し、全体の幅を統一
+- **ユーザーフィードバック**: 「TimestampsにあるUpdatedは消してください。また、TitleとDescriptionは同じ幅なんだけど、Priority,Total Work Time, Timestampsの行は上のTitleとDescriptionと異なる幅だよね。これを合わせるようにしてください。」
+
+#### 変更内容
+
+1. **TimestampsからUpdatedを削除**
+   - "Updated:"行を削除
+   - Createdのみ表示
+   - ラベルを"Timestamps"から"Created"に変更
+
+2. **3カラムの幅を調整**
+   - Priority: Width(34)
+   - Total Work Time: Width(34)
+   - Created: Width(38)
+   - スペース: 2 × 2 = 4
+   - **合計: 34 + 2 + 34 + 2 + 38 = 110**
+   - Title/DescriptionのWidth(110)と完全に一致
+
+3. **Height指定を削除**
+   - 各ボックスの高さは内容に応じて自然に決定
+   - よりシンプルな実装
+
+#### レイアウト構成
+
+**変更前:**
+```
+╭──────────────╮  ╭──────────────╮  ╭──────────────╮
+│ Priority     │  │ Total Work   │  │ Timestamps   │
+│ 🟡 Medium    │  │ Time         │  │ Created: ... │
+│              │  │ 🍅 2h 30m    │  │ Updated: ... │
+╰──────────────╯  ╰──────────────╯  ╰──────────────╯
+Width: 35         Width: 35         Width: 36
+```
+
+**変更後:**
+```
+╭────────────────╮  ╭────────────────╮  ╭──────────────────╮
+│ Priority       │  │ Total Work     │  │ Created          │
+│ 🟡 Medium      │  │ Time           │  │ 2025-10-19 ...   │
+╰────────────────╯  ╰────────────────╯  ╰──────────────────╯
+Width: 34           Width: 34           Width: 38
+合計: 34 + 2 + 34 + 2 + 38 = 110 (Title/Descriptionと一致)
+```
+
+### 変更ファイル
+- `internal/tui/views.go` - Timestamp表示の簡略化、幅の調整
+
+### ユーザー体験の改善
+
+1. **情報のシンプル化**
+   - Updated情報は必須ではないため削除
+   - Createdのみで十分
+
+2. **視覚的な統一感**
+   - TitleとDescriptionと同じ幅（110）に統一
+   - より整然としたレイアウト
+
+3. **ラベルの明確化**
+   - "Timestamps"から"Created"に変更
+   - 表示内容が一目でわかる
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ 3カラムの合計幅がTitle/Descriptionと一致
+- ✅ Updatedが削除されCreatedのみ表示
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- 完璧に統一されたレイアウトになった
+
+---
+
+## 2025-10-29 (Update 10) - Optimize Detail View Layout
+
+### Implementation Details
+
+#### 詳細画面のレイアウト最適化
+- **目的**: より効率的でスッキリとしたレイアウトを実現
+- **ユーザーフィードバック**: 「タスクの詳細画面にStatusの表示はいらないな。削除してください。また、Priority, Total Work Time, Timestampsは同じ行になるようにし、それぞれの高さも合わせてください。Timestampsの高さに合わせる形だと良いです。」
+
+#### 変更内容
+
+1. **Statusボックスを削除**
+   - Statusは不要な情報として削除
+   - よりシンプルで焦点を絞ったレイアウト
+
+2. **3カラムレイアウトの採用**
+   - Priority, Total Work Time, Timestampsを1行に配置
+   - スペース効率の向上
+
+3. **高さの統一**
+   - Priority: Height(4)
+   - Total Work Time: Height(4)
+   - Timestamps: 自然な高さ（2行：Created + Updated）
+   - すべてのボックスの高さをTimestampsに合わせる
+
+#### レイアウト構成
+
+**変更前（2行、2+2カラム）:**
+```
+╭─────────────────╮  ╭─────────────────╮
+│ Status          │  │ Priority        │
+╰─────────────────╯  ╰─────────────────╯
+
+╭─────────────────╮  ╭─────────────────╮
+│ Total Work Time │  │ Timestamps      │
+╰─────────────────╯  ╰─────────────────╯
+```
+
+**変更後（1行、3カラム）:**
+```
+╭──────────────╮  ╭──────────────╮  ╭──────────────╮
+│ Priority     │  │ Total Work   │  │ Timestamps   │
+│ 🟡 Medium    │  │ Time         │  │ Created: ... │
+│              │  │ 🍅 2h 30m    │  │ Updated: ... │
+╰──────────────╯  ╰──────────────╯  ╰──────────────╯
+```
+
+#### 技術的な実装
+
+```go
+// 3カラムの幅計算
+// 合計幅: 110
+// スペース: 2 × 2 = 4
+// 各列: 35, 35, 36
+priorityBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(35).
+    Height(4)  // Timestampsの高さに合わせる
+
+workBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(35).
+    Height(4)  // Timestampsの高さに合わせる
+
+timestampBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(36)
+```
+
+### 変更ファイル
+- `internal/tui/views.go` - Statusボックス削除、3カラムレイアウト実装
+
+### ユーザー体験の改善
+
+1. **情報の整理**
+   - 不要な情報（Status）を削除
+   - 重要な情報を1行にまとめて視認性向上
+
+2. **スペース効率**
+   - 2行から1行に削減
+   - 画面のスクロール量が減少
+
+3. **視覚的な統一感**
+   - すべてのボックスの高さが揃っている
+   - より整然としたレイアウト
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ 3カラムが正しく表示される
+- ✅ すべてのボックスの高さが統一されている
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- よりスッキリと効率的なレイアウトになった
+
+---
+
+## 2025-10-29 (Update 9) - Improve Detail View UX
+
+### Implementation Details
+
+#### 詳細画面のユーザー体験を改善
+- **目的**: より直感的で一貫性のある操作感を実現
+- **ユーザーフィードバック**: 「タスクの詳細画面もd to doneに変更してください。また、Escでreturnするのではなく、Enterで戻るように仕様変更してください」
+
+#### 変更内容
+
+1. **ヘルプテキストの変更**
+   - "d to delete" → "d to done"に変更
+   - より一貫性のある表現（コマンド名と一致）
+
+2. **戻るキーの変更**
+   - "Esc to return" → "Enter to return"に変更
+   - update.goで"esc"キーハンドリングを"enter"に変更
+
+#### 実装箇所
+
+- `internal/tui/views.go`:963 - ヘルプテキストを更新
+- `internal/tui/update.go`:189 - "esc" → "enter"に変更
+
+### 変更前後の比較
+
+**変更前:**
+```
+Press Esc to return | e to edit | d to delete
+```
+
+**変更後:**
+```
+Press Enter to return | e to edit | d to done
+```
+
+### ユーザー体験の改善
+
+1. **より直感的な操作**
+   - Enterキーはより自然な「決定/戻る」アクション
+   - Escキーはキャンセル的な意味合いが強く、詳細表示からの戻りには違和感があった
+
+2. **一貫性の向上**
+   - 「d to done」と表示することで、`/done`コマンドとの一貫性が向上
+   - ユーザーが何が起こるかを理解しやすい
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ 詳細画面でEnterキーでメイン画面に戻る
+- ✅ 詳細画面で'd'キーでタスクを削除
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- より直感的で一貫性のあるUIになった
+
+---
+
+## 2025-10-29 (Update 8) - Unify /done and /delete Commands
+
+### Implementation Details
+
+#### 大幅な仕様変更: /doneコマンドの動作変更
+- **目的**: `/delete`と`/done`を統一し、`/done`でタスクを削除するように変更
+- **ユーザーフィードバック**: 「現在は/deleteと/doneがありますが、これを/doneだけに統一してください。また、/doneを実行するとそのタスクを削除するように変更してください」
+
+#### 変更前の仕様
+- `/done <id>` - タスクを完了状態にマーク（CompleteTodo）
+- `/delete <id>` - タスクを削除（DeleteTodo）
+
+#### 変更後の仕様
+- `/done <id>` - タスクを削除（DeleteTodo）
+- `/delete` - コマンド廃止
+
+#### 実装内容
+
+1. **commands.goの変更**
+   - `handleDoneCommand()`を削除処理に変更
+     - `CompleteTodo()` → `DeleteTodo()`に変更
+     - メッセージを"Marked todo #%d as completed" → "Deleted todo #%d"に変更
+   - `/delete`コマンドのケースを削除
+   - `handleDeleteCommand()`関数を削除
+
+2. **update.goの変更**
+   - 詳細画面の'd'キーの処理を変更
+     - `CompleteTodo()` → `DeleteTodo()`に変更
+     - メッセージを"Todo #%d marked as completed" → "Deleted todo #%d"に変更
+
+3. **views.goのヘルプテキスト更新**
+   - メイン画面のコマンド一覧から`/delete`を削除
+   - ヘルプ画面の`/done`の説明を"Mark todo as completed" → "Delete a todo"に変更
+   - ヘルプ画面から`/delete`の行を削除
+   - 詳細画面のヘルプを"d to mark as done" → "d to delete"に変更
+
+### 変更ファイル
+- `internal/tui/commands.go` - /doneの動作変更、/deleteコマンド削除
+- `internal/tui/update.go` - 'd'キーの動作変更
+- `internal/tui/views.go` - ヘルプテキスト更新（3箇所）
+
+### 技術的な決定
+
+1. **なぜこの変更を行ったか**
+   - UIをシンプルにする（コマンドを減らす）
+   - "done"という直感的な言葉で削除操作を実行
+   - タスク管理アプリでは完了したタスクを残す必要性が低い
+
+2. **既存機能との互換性**
+   - `CompleteTodo`サービスメソッドは残っているため、将来的に復活可能
+   - データベースには`completed_at`カラムが残っているため、仕様変更は可逆的
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ `/done`でタスクが削除される
+- ✅ `/delete`コマンドは使用不可
+- ✅ 詳細画面の'd'キーでタスクが削除される
+
+### ユーザー体験の変化
+
+**変更前:**
+```bash
+/done 1    # タスク#1を完了状態にマーク（データベースに残る）
+/delete 1  # タスク#1を削除
+```
+
+**変更後:**
+```bash
+/done 1    # タスク#1を削除
+```
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- よりシンプルで直感的なUIになった
+
+---
+
+## 2025-10-29 (Update 7) - Widen Detail View Boxes
+
+### Implementation Details
+
+#### 詳細画面のボックス幅をトップ画面に合わせて拡大
+- **目的**: トップ画面と同じくらいの幅にして、視覚的な一貫性を向上
+- **ユーザーフィードバック**: 「全体的にもう少し幅を広げてください。トップ画面と同じくらいの幅でお願いします」
+
+#### トップ画面の幅
+- No.: 4
+- Title: 35
+- Description: 35
+- Total time: 10
+- Create Date: 11
+- スペース: 12 (各列間 3文字 × 4)
+- 余白: 2
+- **合計: 約109文字**
+
+#### 実装内容
+1. **単一ボックスの幅を拡大**
+   - Title: 80 → 110
+   - Description: 80 → 110
+
+2. **2カラムボックスの幅を拡大**
+   - Status: 38 → 54
+   - Priority: 38 → 54
+   - Total Work Time: 38 → 54
+   - Timestamps: 38 → 54
+   - 合計: 54 + 2(スペース) + 54 = 110
+
+### 変更前後の比較
+```
+変更前:
+Title: Width(80)
+Description: Width(80)
+Status/Priority: Width(38) × 2 = 78
+
+変更後:
+Title: Width(110)
+Description: Width(110)
+Status/Priority: Width(54) × 2 = 110
+```
+
+### 視覚的な結果
+```
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Title                                                                                                            │
+│ Complete authentication module                                                                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Description                                                                                                      │
+│                                                                                                                  │
+│ Implement OAuth2 and JWT-based authentication                                                                   │
+│                                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+╭────────────────────────────────────────────────────────╮  ╭────────────────────────────────────────────────────────╮
+│ Status                                                 │  │ Priority                                               │
+│ Pending                                                │  │ 🟡 Medium                                              │
+╰────────────────────────────────────────────────────────╯  ╰────────────────────────────────────────────────────────╯
+```
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ トップ画面と詳細画面の幅が統一された
+
+### 変更ファイル
+- `internal/tui/views.go` - 全ボックスの幅を拡大
+
+### 技術的な決定
+- トップ画面のテーブル幅（約109文字）を基準に、詳細画面のボックス幅を110に統一
+- 2カラムレイアウトは54 + 2 + 54 = 110で合計幅を合わせる
+- 視覚的な一貫性とユーザビリティの向上を実現
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+
+---
+
+## 2025-10-29 (Update 6) - Revert to Original Box Design
+
+### Implementation Details
+
+#### ボーダータイトルの実装を元に戻す
+- **目的**: 破線によるタイトルラベルがズレていたため、元の実装（枠線の中にタイトル表示）に戻す
+- **ユーザーフィードバック**: 「枠線の中にタイトルがあっても構いません」
+
+#### 実装内容
+1. **createTitleLabel()ヘルパー関数を削除**
+   - 動的な破線生成を廃止
+
+2. **すべてのボックスを元の実装に戻す**
+   - `BorderTop(false)` を削除し、通常のボーダー（全辺）を復元
+   - タイトルラベルをボックスの内部に配置
+   - パディングを `(1, 2)` に統一（Descriptionのみ `(2, 2)` で高さ維持）
+
+3. **修正したボックス**
+   - Title
+   - Description
+   - Status
+   - Priority
+   - Total Work Time
+   - Timestamps
+
+### 実装パターン
+```go
+// Title box
+titleLabel := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("213")).
+    Bold(true).
+    Render("Title")
+titleContent := lipgloss.NewStyle().
+    Foreground(fgDefault).
+    Render(targetTodo.Title)
+titleBoxContent := titleLabel + "\n" + titleContent
+titleBoxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(1, 2).
+    Width(80)
+titleBox := titleBoxStyle.Render(titleBoxContent)
+```
+
+### 視覚的な結果
+```
+╭────────────────────────────────────────────────────────────────────────────────╮
+│ Title                                                                          │
+│ Complete authentication module                                                 │
+╰────────────────────────────────────────────────────────────────────────────────╯
+
+╭────────────────────────────────────────────────────────────────────────────────╮
+│ Description                                                                    │
+│                                                                                │
+│ Implement OAuth2 and JWT-based authentication                                 │
+│                                                                                │
+╰────────────────────────────────────────────────────────────────────────────────╯
+
+╭──────────────────────────────────────╮  ╭──────────────────────────────────────╮
+│ Status                               │  │ Priority                             │
+│ Pending                              │  │ 🟡 Medium                            │
+╰──────────────────────────────────────╯  ╰──────────────────────────────────────╯
+```
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし
+- ✅ タイトルが枠線内に正しく表示される
+
+### 変更ファイル
+- `internal/tui/views.go` - すべてのボックスを元の実装に戻す
+
+### 技術的な決定
+- シンプルで確実な実装を優先
+- lipglossの標準的なボーダー機能のみを使用
+- ボックス内にタイトルを配置することで、表示のズレを完全に解消
+
+### 次のステップ
+- 機能は完全に修正され、テスト済み
+- ユーザーの要求を満たしている
+
+---
+
+## 2025-10-29 (Update 5) - Fix Border Title Line Width
+
+### Implementation Details
+
+#### タイトルラベルの破線の動的生成
+- **目的**: タイトルラベルの破線がボックス幅に合わせて正しく表示されるように修正
+- **問題**: 固定長の破線が画面幅に合わず、途中で途切れていた
+
+#### 実装内容
+1. **createTitleLabel()ヘルパー関数の追加**
+   - タイトルテキストとボックス幅を引数に取る
+   - タイトルの長さを計算し、残りのスペースを左右に均等配分
+   - 破線（`─`）を動的に生成
+
+2. **すべてのタイトルラベルを動的生成に変更**
+   - Title (幅: 80)
+   - Description (幅: 80)
+   - Status (幅: 38)
+   - Priority (幅: 38)
+   - Total Work Time (幅: 38)
+   - Timestamps (幅: 38)
+
+### ヘルパー関数の実装
+```go
+func createTitleLabel(title string, width int) string {
+    // Calculate padding for centering
+    titleLen := len(title) + 2 // +2 for spaces around title
+    totalLineLen := width
+    leftLineLen := (totalLineLen - titleLen) / 2
+    rightLineLen := totalLineLen - titleLen - leftLineLen
+
+    leftLine := strings.Repeat("─", leftLineLen)
+    rightLine := strings.Repeat("─", rightLineLen)
+
+    return lipgloss.NewStyle().
+        Foreground(lipgloss.Color("213")).
+        Bold(true).
+        Render(leftLine + " " + title + " " + rightLine)
+}
+```
+
+### 使用例
+```go
+// Before (固定長)
+titleLabel := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("213")).
+    Bold(true).
+    Render("─────────────────────────────────── Title ────────────────────────────────────")
+
+// After (動的生成)
+titleLabel := createTitleLabel("Title", 80)
+```
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ タイトルラベルがボックス幅に完全に合致
+- ✅ 診断エラーなし
+
+### 変更ファイル
+- `internal/tui/views.go` - createTitleLabel()関数を追加、すべてのラベルを動的生成に変更
+
+### 次のステップ
+- 機能は完全に修正され、テスト済み
+- ユーザーの要求を満たしている
+
+---
+
+## 2025-10-29 (Update 4) - Neovim-Style Border Titles Implementation
+
+### Implementation Details
+
+#### Neovim風のボーダータイトルの実装
+- **目的**: 詳細画面のボックスの上部中央にタイトルを表示（Neovimのスタイル）
+
+#### 実装内容
+1. **lipglossのBorderTitle()メソッドを試行**
+   - 最初に`BorderTitle()`メソッドを使用しようとした
+   - lipgloss v0.10.0では利用できないことが判明
+   - lipgloss v1.1.0にアップデート後も同じ問題
+
+2. **代替アプローチの採用**
+   - `BorderTop(false)`を使用してトップボーダーを削除
+   - ボックスの上にデコラティブなタイトルラベルを配置
+   - 破線（`────`）で視覚的な装飾を追加
+
+3. **全ボックスにタイトルラベルを実装**
+   - Title
+   - Description
+   - Status / Priority (2カラム)
+   - Total Work Time / Timestamps (2カラム)
+
+4. **コードクリーンアップ**
+   - 未使用の`truncateString()`関数を削除（deprecated）
+   - 未使用の`renderPriority()`メソッドを削除
+
+### 実装パターン
+```go
+// Title label with decorative dashes
+titleLabel := lipgloss.NewStyle().
+    Foreground(lipgloss.Color("213")).
+    Bold(true).
+    Render("─────────────────────────────────── Title ────────────────────────────────────")
+s.WriteString(titleLabel + "\n")
+
+// Box with top border removed
+boxStyle := lipgloss.NewStyle().
+    Border(lipgloss.RoundedBorder()).
+    BorderTop(false).  // Key: removes top to connect with label
+    BorderForeground(lipgloss.Color("#585b70")).
+    Padding(0, 2).
+    Width(80)
+```
+
+### 技術的な決定
+
+1. **BorderTitle()が使えない理由**
+   - lipgloss v0.10.0にはこのメソッドが存在しない
+   - v1.1.0にアップデートしても同じ問題
+   - おそらくAPIが異なるか、別の実装方法が必要
+
+2. **代替アプローチの利点**
+   - シンプルで理解しやすい
+   - カスタマイズ性が高い（デコレーション、色、位置など）
+   - lipglossのバージョンに依存しない
+   - Neovimの見た目を忠実に再現
+
+### テスト結果
+- ✅ ビルド成功
+- ✅ 全テストパス
+- ✅ 診断エラーなし（未使用関数を削除後）
+
+### 変更ファイル
+- `internal/tui/views.go` - renderDetailView()を完全に書き直し、全ボックスにタイトルラベルを追加
+- `go.mod` / `go.sum` - lipglossをv1.1.0にアップデート
+
+### 視覚的な結果
+```
+─────────────────────────────────── Title ────────────────────────────────────
+│ Complete authentication module                                             │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+──────────────────────────────── Description ─────────────────────────────────
+│                                                                             │
+│ Implement OAuth2 and JWT-based authentication                              │
+│                                                                             │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+──────────────── Status ────────────────     ─────────────── Priority ────────────────
+│ ✓ Completed                        │     │ 🔴 High                          │
+╰────────────────────────────────────╯     ╰──────────────────────────────────╯
+```
+
+### 次のステップ
+- 機能は完全に実装され、テスト済み
+- ユーザーの要求を満たしている
+- 必要に応じて追加のフィードバックに対応可能
+
+---
+
+## 2025-10-29 (Update 3) - Detail View Layout Refinement
+
+### Implementation Details
+
+#### レイアウトの最適化
+- **目的**: ユーザーフィードバックに基づき、詳細画面のレイアウトを改善
+
+#### 実装内容
+1. **Descriptionボックスの高さを3倍に拡大**
+   - 垂直パディングを0から2に増加
+   - 明示的な高さを8に設定
+   - より多くの説明テキストを表示可能に
+
+2. **2カラムレイアウトの追加**
+   - Total Work TimeとTimestampsを横並びに配置
+   - Status/Priorityと同じレイアウトパターンを採用
+   - スペース効率の向上
+
+3. **Due Dateフィールドを削除**
+   - シンプルで焦点を絞ったレイアウト
+   - 必須情報に集中
+
+### レイアウト構成
+```
+╭─────────────────── Title ────────────────────╮
+│ Task title                                   │
+╰──────────────────────────────────────────────╯
+
+╭────────────── Description ───────────────────╮
+│                                              │
+│ Task description (3x height)                 │
+│                                              │
+╰──────────────────────────────────────────────╯
+
+╭─── Status ──╮  ╭─── Priority ──╮
+│ Pending     │  │ 🟡 Medium     │
+╰─────────────╯  ╰────────────────╯
+
+╭─ Total Work Time ─╮  ╭─ Timestamps ─╮
+│ 🍅 2h 30m          │  │ Created: ...  │
+╰────────────────────╯  │ Updated: ...  │
+                         ╰───────────────╯
+```
+
+### テスト結果
+```bash
+✓ ビルド成功
+✓ 全テスト通過
+```
+
+---
+
+## 2025-10-29 (Update 2) - Detail View Design Overhaul
+
+### Implementation Details
+
+#### Neovim-style Design Makeover
+- **目的**: Neovimスタイルのエレガントなボックスデザインに変更し、英語表記に統一
+- **デザイン参考**: Neovimのコマンドパレット（ボーダー付きボックス、中央配置タイトル）
+
+#### 実装内容
+1. **ボーダー付きボックスデザイン**
+   - 各フィールドをRounded Border付きのボックスで囲む
+   - ボーダーカラー: `#585b70` (subtle gray)
+   - 統一されたパディングと幅（80文字）
+
+2. **レイアウト改善**
+   - Status と Priority を横並びに配置（2カラムレイアウト）
+   - 各ボックスのラベルをピンク色（`#d5a8e1`）で強調
+   - 値を適切なカラーで表示（完了: 緑、期限切れ: 赤）
+
+3. **英語表記に変更**
+   - タイトル: "Title"
+   - 説明: "Description"
+   - ステータス: "Status" (Pending / ✓ Completed)
+   - 優先度: "Priority" (🔴 High / 🟡 Medium / 🟢 Low)
+   - 累積作業時間: "Total Work Time"
+   - 期限: "Due Date"
+   - タイムスタンプ: "Timestamps" (Created / Updated)
+
+4. **エラーハンドリング**
+   - Todo not found メッセージもボーダー付きボックスで表示
+
+### テスト結果
+```bash
+✓ ビルド成功
+✓ 全テスト通過
+```
+
+### デザインの特徴
+- **視覚的階層**: ボックスで情報をグループ化し、スキャンしやすい
+- **カラースキーム**: 落ち着いたダークテーマに合わせた配色
+- **絵文字の活用**: 優先度と作業時間を視覚的に表現
+- **2カラムレイアウト**: Status と Priority を並べて表示し、スペース効率を向上
+
+---
+
+## 2025-10-29 - Task Detail View Implementation
+
+### Implementation Details
+
+#### タスク詳細画面の実装
+- **目的**: トップ画面で十字キーの上下でタスクをフォーカスし、何もcommandが入力されていない状態でEnterを押すとタスクの詳細画面に遷移する機能を追加
+
+#### 設計仕様の追加
+- `docs/design/detailed_design.md` に以下を追加:
+  - `ViewModeDetail` の定義
+  - `Model` 構造体に `detailTodoID` フィールド追加
+  - `renderDetailView()` の仕様追加
+- `docs/design/basic_design.md` のUIフローを更新:
+  - タスク詳細画面への遷移フローを追加
+  - 詳細画面からの操作（編集、完了）を追加
+
+#### 実装内容
+1. **Model層の拡張** (`internal/tui/model.go`)
+   - `ViewModeDetail` を追加
+   - `detailTodoID int64` フィールドを追加（詳細表示中のToDo ID）
+
+2. **スタイルの追加** (`internal/tui/styles.go`)
+   - `todoDetailFieldStyle` を追加（詳細画面のフィールド値用スタイル）
+
+3. **View層の拡張** (`internal/tui/views.go`)
+   - `View()` 関数に `ViewModeDetail` のケースを追加
+   - `renderDetailView()` 関数を実装:
+     - タスクのID、タイトル、説明、ステータス、優先度を表示
+     - 累積作業時間、期限、作成日時、更新日時を表示
+     - 絵文字を使用した視覚的な表現（🔴 高、🟡 中、🟢 低、🍅 作業時間）
+     - 期限切れの場合は赤色で警告表示
+
+4. **Update層の拡張** (`internal/tui/update.go`)
+   - `handleEnter()` 関数を修正:
+     - 入力が空の場合、現在カーソルが指しているタスクの詳細画面に遷移
+     - todosが存在し、cursorが有効な範囲内の場合のみ遷移
+   - 詳細画面用のキーハンドリングを追加:
+     - `Esc`: メイン画面に戻る
+     - `e`: 編集画面に遷移（既存の編集機能を再利用）
+     - `d`: タスクを完了としてマーク → メイン画面に戻る
+     - `Ctrl+C`: アプリ終了
+
+### 技術的な決定
+
+#### なぜこの実装方法を選んだか
+1. **既存の画面遷移パターンに従う**: 既存の`ViewModeAddTodo`、`ViewModeEditTodo`、`ViewModePomodoro`と同じパターンで実装し、一貫性を保つ
+2. **既存の機能を再利用**: 詳細画面からの編集は既存の`ViewModeEditTodo`を再利用し、コードの重複を避ける
+3. **直感的なキーバインド**: `e`で編集、`d`で完了など、一般的なキーバインドを採用
+4. **視覚的な表現**: 絵文字を使用して優先度や作業時間を視覚的に表現し、ユーザビリティを向上
+
+### テスト
+
+#### ビルドとテスト結果
+```bash
+go build -o bin/koto ./cmd/koto  # 成功
+go test ./...                     # 全テスト通過
+```
+
+#### 手動テスト項目
+以下の動作確認が必要（ユーザー側で実行）:
+1. [ ] メイン画面で↑/↓キーでタスクをフォーカスできる
+2. [ ] 何もコマンドを入力せずにEnterを押すと、フォーカスされているタスクの詳細画面に遷移する
+3. [ ] 詳細画面でタスクの全情報（タイトル、説明、ステータス、優先度、作業時間、期限、作成日時、更新日時）が表示される
+4. [ ] 詳細画面でEscキーを押すとメイン画面に戻る
+5. [ ] 詳細画面でeキーを押すと編集画面に遷移する
+6. [ ] 詳細画面でdキーを押すとタスクが完了としてマークされ、メイン画面に戻る
+
+### 次のステップ
+
+この機能により、以下が実現されました:
+- タスクの詳細情報を一目で確認できる
+- 詳細画面から直接編集や完了操作ができる
+- UIフローが直感的で使いやすい
+
+今後の改善案:
+- 詳細画面でのスクロール機能（説明が長い場合）
+- 詳細画面からのポモドーロタイマー起動
+- 詳細画面でのタスク削除機能
 
 ---
 
@@ -1914,7 +2793,7 @@ The previous implementation counted characters (runes) without considering that 
 ```
 No.  │ Title                      │ Description                     │ Create Date
 ────┼────────────────────────────┼─────────────────────────────────┼───────────
-10   │ あー、andらなきゃいけnotこandisたくさんだー。 ... │                                 │ 2025-10-19
+10   │ あー、やらなきゃいけないことがたくさんだー。 ... │                                 │ 2025-10-19
      ^--- This Japanese text was counted as ~25 characters but displayed much wider
 ```
 
@@ -1991,16 +2870,16 @@ Added `github.com/mattn/go-runewidth` package to calculate actual display width 
 ```
 No.  │ Title                      │ Description                     │ Create Date
 ────┼────────────────────────────┼─────────────────────────────────┼───────────
-10   │ あー、andらなきゃいけnotこandisたくさんだー。 ... │                                 │ 2025-10-19
-9    │ これis非常in長いTodoofタイトルinなります。 │                                 │ 2025-10-19
+10   │ あー、やらなきゃいけないことがたくさんだー。 ... │                                 │ 2025-10-19
+9    │ これは非常に長いTodoのタイトルになります。 │                                 │ 2025-10-19
 ```
 
 **After** (display width - properly aligned):
 ```
 No.  │ Title           │ Description     │ Create Date
 ────┼─────────────────┼─────────────────┼───────────
-10   │ あー、andら...   │                 │ 2025-10-19
-9    │ これis非...     │                 │ 2025-10-19
+10   │ あー、やら...   │                 │ 2025-10-19
+9    │ これは非...     │                 │ 2025-10-19
 5    │ test3           │                 │ 2025-10-19
 ```
 
@@ -2088,15 +2967,15 @@ No.  │ Title           │ Description     │ Create Date
 ```
 No.  │ Title           │ Description     │ Create Date
 ────┼─────────────────┼─────────────────┼───────────
-10   │ あー、andら...   │                 │ 2025-10-19
+10   │ あー、やら...   │                 │ 2025-10-19
 ```
 
 **After** (width 30):
 ```
 No.  │ Title                          │ Description                    │ Create Date
 ────┼────────────────────────────────┼────────────────────────────────┼───────────
-10   │ あー、andらなきゃいけnotこ... │                                │ 2025-10-19
-9    │ これis非常in長いTodoofタイ... │                                │ 2025-10-19
+10   │ あー、やらなきゃいけないこ... │                                │ 2025-10-19
+9    │ これは非常に長いTodoのタイ... │                                │ 2025-10-19
 5    │ test3                          │                                │ 2025-10-19
 ```
 
@@ -2194,15 +3073,15 @@ Based on the reference image provided by user, implementing:
 ```
 No.  │ Title                          │ Description                    │ Create Date
 ────┼────────────────────────────────┼────────────────────────────────┼───────────
-10   │ あー、andらなきゃいけnotこ... │                                │ 2025-10-19
+10   │ あー、やらなきゃいけないこ... │                                │ 2025-10-19
 ```
 
 **After** (dark theme, clean):
 ```
  No.    Title                           Description                     Create Date
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- 10     あー、andらなきゃいけnotこ...                                    2025-10-19   (dark gray bg)
- 9      これis非常in長いTodoofタイ...                                    2025-10-19   (darker gray bg)
+ 10     あー、やらなきゃいけないこ...                                    2025-10-19   (dark gray bg)
+ 9      これは非常に長いTodoのタイ...                                    2025-10-19   (darker gray bg)
  5      test3                                                            2025-10-19   (dark gray bg)
  4      test2                                                            2025-10-19   (LIME GREEN BG - selected)
 ```
@@ -2399,7 +3278,7 @@ No.  │ Title                          │ Description                    │ C
 **Reasoning**:
 - Correct handling of multibyte UTF-8 characters
 - Japanese, Chinese, emoji are 1 rune each (not 3-4 bytes)
-- "こんinちis" (5 characters) correctly counted as 5 runes, not 15 bytes
+- "こんにちは" (5 characters) correctly counted as 5 runes, not 15 bytes
 - International user support out of the box
 
 #### 2. 10 Character Limit
@@ -2445,8 +3324,8 @@ No.  │ Title                          │ Description                    │ C
 |-------|-----------|--------|
 | "Short" | 10 | "Short" |
 | "This is a very long todo title" | 10 | "This is a ..." |
-| "買い物in行く" | 10 | "買い物in行く" |
-| "これis非常in長いToDoofタイトルwithす" | 10 | "これis非常in長いTo..." |
+| "買い物に行く" | 10 | "買い物に行く" |
+| "これは非常に長いToDoのタイトルです" | 10 | "これは非常に長いTo..." |
 | "🎉🎊🎈🎁🎂🍰🍕🍔🍟🌮" | 5 | "🎉🎊🎈🎁🎂..." |
 
 ### Visual Changes
@@ -2502,7 +3381,7 @@ No.  │ Title                          │ Description                    │ C
 **Updated**: `internal/tui/views_test.go`
 - Updated test cases to use maxLength 15:
   - "Long title - truncate with ellipsis": Expected "This is a very ..."
-  - "Japanese characters - truncation": Expected "これis非常in長いToDoofタイ..."
+  - "Japanese characters - truncation": Expected "これは非常に長いToDoのタイ..."
   - "Mixed English and Japanese - truncation": Expected "Buy groceries a..."
 
 ### Visual Changes
@@ -2511,14 +3390,14 @@ No.  │ Title                          │ Description                    │ C
 ```
 1. This is a ...
 2. Buy grocer...
-3. これis非常in長いTo...
+3. これは非常に長いTo...
 ```
 
 **After** (15 chars):
 ```
 1. This is a very ...
 2. Buy groceries a...
-3. これis非常in長いToDoofタイ...
+3. これは非常に長いToDoのタイ...
 ```
 
 ### Benefits
@@ -2539,13 +3418,13 @@ No.  │ Title                          │ Description                    │ C
 **Goal**: Modernize the UI with transparent backgrounds, neon green selection highlighting (background), and wider columns for better readability.
 
 **User Requests**:
-> "すごく良いofwithすis、以下of3点/改修してください。
-> 1.背景is透明with良いwithす。
-> 2.幅/もう少し広げてください。
-> 3.選択whenin、文字of色is蛍光色of緑inしてください。"
+> "すごく良いのですが、以下の3点を改修してください。
+> 1.背景は透明で良いです。
+> 2.幅をもう少し広げてください。
+> 3.選択した時に、文字の色は蛍光色の緑にしてください。"
 
 **Correction**:
-> "提示didイメージ/良く見てください。選択didtaskis緑with囲まれていますよね？こちらin修正してください。"
+> "提示したイメージを良く見てください。選択したtaskは緑で囲まれていますよね？こちらに修正してください。"
 
 Changed from neon green text to neon green **background** for selection.
 

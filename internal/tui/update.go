@@ -2,10 +2,13 @@ package tui
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -237,6 +240,103 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+		// Handle export view
+		if m.viewMode == ViewModeExport {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				return m, tea.Quit
+
+			case "esc":
+				if m.exportSuccess {
+					// Return to list view from success screen
+					m.viewMode = ViewModeList
+					m.exportSuccess = false
+					m.exportFilePath = ""
+					m.exportMessage = ""
+					return m, nil
+				}
+				// Cancel export and return to list view
+				m.viewMode = ViewModeList
+				m.input.Placeholder = "Enter command (type /help for help)"
+				m.input.SetValue("")
+				m.message = "Export cancelled"
+				m.err = nil
+				return m, nil
+
+			case "enter":
+				if m.exportSuccess {
+					// Return to list view from success screen
+					m.viewMode = ViewModeList
+					m.exportSuccess = false
+					m.exportFilePath = ""
+					m.exportMessage = ""
+					return m, nil
+				}
+				// Execute export
+				return m.handleExportEnter()
+			}
+
+			// Update input for export view
+			var cmd tea.Cmd
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
+		}
+
+		// Handle import view
+		if m.viewMode == ViewModeImport {
+			switch msg.String() {
+			case "ctrl+c":
+				m.quitting = true
+				return m, tea.Quit
+
+			case "esc":
+				if m.importStep == 3 {
+					// Return to list view from completion screen
+					m.viewMode = ViewModeList
+					m.importStep = 0
+					m.importFilePath = ""
+					m.importSuccess = false
+					m.importMessage = ""
+					return m, loadTodos(m.service)
+				}
+				if m.importStep > 0 {
+					// Go back to previous step
+					m.importStep--
+					m.err = nil
+					return m, nil
+				}
+				// Cancel import and return to list view
+				m.viewMode = ViewModeList
+				m.input.Placeholder = "Enter command (type /help for help)"
+				m.input.SetValue("")
+				m.message = "Import cancelled"
+				m.err = nil
+				return m, nil
+
+			case "enter":
+				if m.importStep == 3 {
+					// Return to list view from completion screen
+					m.viewMode = ViewModeList
+					m.importStep = 0
+					m.importFilePath = ""
+					m.importSuccess = false
+					m.importMessage = ""
+					return m, loadTodos(m.service)
+				}
+				// Execute import step
+				return m.handleImportEnter()
+			}
+
+			// Update input for import view (only on step 0)
+			if m.importStep == 0 {
+				var cmd tea.Cmd
+				m.input, cmd = m.input.Update(msg)
+				return m, cmd
+			}
+			return m, nil
+		}
+
 		// Handle list view keys
 		switch msg.String() {
 		case "ctrl+c":
@@ -446,6 +546,33 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 		return m, tickPomodoro()
 	}
 
+	// Check if command is /export - switch to export view
+	if value == "/export" {
+		m.viewMode = ViewModeExport
+		m.exportSuccess = false
+		m.exportFilePath = time.Now().Format("20060102_150405") // Use as part of default filename
+		m.exportMessage = ""
+		m.input.Placeholder = "Enter export file path (or press Enter for default)..."
+		m.input.SetValue("")
+		m.err = nil
+		return m, nil
+	}
+
+	// Check if command is /import - switch to import view
+	if value == "/import" {
+		m.viewMode = ViewModeImport
+		m.importStep = 0
+		m.importFilePath = ""
+		m.importPreview = 0
+		m.importSuccess = false
+		m.importMessage = ""
+		m.importCount = 0
+		m.input.Placeholder = "Enter import file path..."
+		m.input.SetValue("")
+		m.err = nil
+		return m, nil
+	}
+
 	return m, parseAndExecuteCommand(m.service, value)
 }
 
@@ -577,4 +704,110 @@ func (m *Model) handleEditTodoEnter() (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+// handleExportEnter processes the enter key press in export view
+func (m *Model) handleExportEnter() (tea.Model, tea.Cmd) {
+	value := m.input.Value()
+
+	// Generate default file path if empty
+	filePath := value
+	if filePath == "" {
+		filePath = fmt.Sprintf("%s/.koto/export_%s.json",
+			os.Getenv("HOME"),
+			time.Now().Format("20060102_150405"))
+	}
+
+	// Expand ~ to home directory
+	if strings.HasPrefix(filePath, "~/") {
+		filePath = os.Getenv("HOME") + filePath[1:]
+	}
+
+	// Execute export
+	ctx := context.Background()
+	err := m.service.ExportToJSON(ctx, filePath)
+	if err != nil {
+		m.err = err
+		return m, nil
+	}
+
+	// Get todo count for summary
+	todos, _ := m.service.ListTodos(ctx)
+	todoCount := len(todos)
+
+	// Update state for success screen
+	m.exportSuccess = true
+	m.exportFilePath = filePath
+	m.exportMessage = fmt.Sprintf("  • Total Todos: %d\n  • File Size: ~%d KB\n  • Timestamp: %s",
+		todoCount,
+		todoCount/10, // Rough estimate
+		time.Now().Format("2006-01-02 15:04:05"))
+	m.err = nil
+
+	return m, nil
+}
+
+// handleImportEnter processes the enter key press in import view
+func (m *Model) handleImportEnter() (tea.Model, tea.Cmd) {
+	switch m.importStep {
+	case 0:
+		// Step 1: File path input - validate and read file
+		filePath := m.input.Value()
+		if filePath == "" {
+			m.err = errors.New("file path cannot be empty")
+			return m, nil
+		}
+
+		// Expand ~ to home directory
+		if strings.HasPrefix(filePath, "~/") {
+			filePath = os.Getenv("HOME") + filePath[1:]
+		}
+
+		// Check if file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			m.err = errors.New("file not found")
+			return m, nil
+		}
+
+		// Read file to get preview count
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			m.err = errors.New("failed to read file")
+			return m, nil
+		}
+
+		var todos []*model.Todo
+		if err := json.Unmarshal(data, &todos); err != nil {
+			m.err = errors.New("invalid JSON format")
+			return m, nil
+		}
+
+		// Save file path and move to confirmation step
+		m.importFilePath = filePath
+		m.importPreview = len(todos)
+		m.importStep = 1
+		m.err = nil
+		return m, nil
+
+	case 1:
+		// Step 2: Confirmation - execute import
+		m.importStep = 2
+		ctx := context.Background()
+		err := m.service.ImportFromJSON(ctx, m.importFilePath)
+
+		// Move to completion step
+		m.importStep = 3
+		if err != nil {
+			m.importSuccess = false
+			m.importMessage = err.Error()
+		} else {
+			m.importSuccess = true
+			m.importCount = m.importPreview
+		}
+		return m, nil
+
+	default:
+		// Should not reach here
+		return m, nil
+	}
 }

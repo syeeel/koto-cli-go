@@ -33,6 +33,10 @@ func (m Model) View() string {
 		return m.renderPomodoroView()
 	case ViewModeDetail:
 		return m.renderDetailView()
+	case ViewModeExport:
+		return m.renderExportView()
+	case ViewModeImport:
+		return m.renderImportView()
 	default:
 		return m.renderListView()
 	}
@@ -1051,6 +1055,211 @@ func (m Model) renderDetailView() string {
 
 	// Help text
 	s.WriteString(helpStyle.Render("Press Enter to return | e to edit | d to done | p to pomodoro"))
+
+	return s.String()
+}
+
+// renderExportView renders the export screen
+func (m Model) renderExportView() string {
+	var s strings.Builder
+
+	// Calculate dynamic widths
+	widths := calculateDynamicWidths(m.width)
+
+	// Title with dark background
+	s.WriteString(titleStyle.Render(" 📤 Export Todos to JSON "))
+	s.WriteString("\n\n")
+
+	if !m.exportSuccess {
+		// Step 1: File path input
+		s.WriteString(headerStyle.Render(" Step 1/2: Enter File Path "))
+		s.WriteString("\n\n")
+
+		// Show default path
+		defaultPath := lipgloss.NewStyle().
+			Foreground(fgDim).
+			Render("Default: ~/.koto/export_" + m.exportFilePath + ".json")
+		s.WriteString(defaultPath)
+		s.WriteString("\n\n")
+
+		// Input field
+		s.WriteString(m.input.View())
+		s.WriteString("\n")
+
+		// Error message if any
+		if m.err != nil {
+			s.WriteString("\n")
+			s.WriteString(errorStyle.Render("Error: " + m.err.Error()))
+			s.WriteString("\n")
+		}
+
+		// Help text
+		s.WriteString("\n")
+		s.WriteString(helpStyle.Render("Press Enter to export | Esc to cancel"))
+	} else {
+		// Step 2: Success screen
+		s.WriteString(headerStyle.Render(" ✅ Export Successful! "))
+		s.WriteString("\n\n")
+
+		// File location box
+		fileLabel := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("213")).
+			Bold(true).
+			Render("File Location:")
+		fileContent := lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render(m.exportFilePath)
+		fileBoxContent := fileLabel + "\n" + fileContent
+
+		fileBoxStyle := lipgloss.NewStyle().
+			BorderStyle(simpleBorder).
+			BorderForeground(lipgloss.Color("#585b70")).
+			Padding(1, 2).
+			Width(widths.DetailBox)
+		fileBox := fileBoxStyle.Render(fileBoxContent)
+		s.WriteString(fileBox)
+		s.WriteString("\n\n")
+
+		// Export summary
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(accentGreen).
+			Bold(true).
+			Render("📊 Export Summary:"))
+		s.WriteString("\n")
+		s.WriteString(messageStyle.Render(m.exportMessage))
+		s.WriteString("\n\n")
+
+		// Help text
+		s.WriteString(helpStyle.Render("Press Enter to return to main view"))
+	}
+
+	return s.String()
+}
+
+// renderImportView renders the import screen
+func (m Model) renderImportView() string {
+	var s strings.Builder
+
+	// Title with dark background
+	s.WriteString(titleStyle.Render(" 📥 Import Todos from JSON "))
+	s.WriteString("\n\n")
+
+	switch m.importStep {
+	case 0:
+		// Step 1: File path input
+		s.WriteString(headerStyle.Render(" Step 1/4: Select File "))
+		s.WriteString("\n\n")
+
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render("Enter file path:"))
+		s.WriteString("\n")
+
+		// Input field
+		s.WriteString(m.input.View())
+		s.WriteString("\n\n")
+
+		// Recent files hint
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(fgDim).
+			Italic(true).
+			Render("Recent files in ~/.koto/:"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(fgDim).
+			Render("  (List files ending with .json)"))
+		s.WriteString("\n")
+
+		// Error message if any
+		if m.err != nil {
+			s.WriteString("\n")
+			s.WriteString(errorStyle.Render("Error: " + m.err.Error()))
+			s.WriteString("\n")
+		}
+
+		// Help text
+		s.WriteString("\n")
+		s.WriteString(helpStyle.Render("Press Enter to continue | Esc to cancel"))
+
+	case 1:
+		// Step 2: Confirmation
+		s.WriteString(headerStyle.Render(" Step 2/4: Confirm Import "))
+		s.WriteString("\n\n")
+
+		// File path box
+		fileLabel := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("213")).
+			Bold(true).
+			Render("File:")
+		fileContent := lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render(m.importFilePath)
+		fileBoxContent := fileLabel + " " + fileContent
+		s.WriteString(fileBoxContent)
+		s.WriteString("\n\n")
+
+		// Import preview
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(accentGreen).
+			Bold(true).
+			Render("📊 Import Preview:"))
+		s.WriteString("\n")
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render(fmt.Sprintf("  • Total Todos: %d", m.importPreview)))
+		s.WriteString("\n\n")
+
+		// Warning
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(lipgloss.Color("220")).
+			Render("⚠️  Note: IDs will be regenerated"))
+		s.WriteString("\n\n")
+
+		// Help text
+		s.WriteString(helpStyle.Render("Press Enter to import | Esc to cancel"))
+
+	case 2:
+		// Step 3: Importing (processing)
+		s.WriteString(headerStyle.Render(" Step 3/4: Importing... "))
+		s.WriteString("\n\n")
+
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(fgDefault).
+			Render("⏳ Importing todos, please wait..."))
+		s.WriteString("\n")
+
+	case 3:
+		// Step 4: Complete
+		if m.importSuccess {
+			s.WriteString(headerStyle.Render(" ✅ Import Successful! "))
+		} else {
+			s.WriteString(headerStyle.Render(" ❌ Import Failed "))
+		}
+		s.WriteString("\n\n")
+
+		// Import summary
+		s.WriteString(lipgloss.NewStyle().
+			Foreground(accentGreen).
+			Bold(true).
+			Render("📊 Import Summary:"))
+		s.WriteString("\n")
+
+		if m.importSuccess {
+			s.WriteString(lipgloss.NewStyle().
+				Foreground(fgDefault).
+				Render(fmt.Sprintf("  • Imported: %d todos", m.importCount)))
+			s.WriteString("\n")
+			s.WriteString(lipgloss.NewStyle().
+				Foreground(fgDefault).
+				Render("  • Failed: 0"))
+		} else {
+			s.WriteString(errorStyle.Render(m.importMessage))
+		}
+		s.WriteString("\n\n")
+
+		// Help text
+		s.WriteString(helpStyle.Render("Press Enter to return to main view"))
+	}
 
 	return s.String()
 }
