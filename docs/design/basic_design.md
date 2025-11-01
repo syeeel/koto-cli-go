@@ -1,83 +1,83 @@
-# koto - ToDo管理CLIツール 基本設計書
+# koto - ToDo Management CLI Tool Basic Design Document
 
-## 1. プロジェクト概要
+## 1. Project Overview
 
-**koto**は、Goで開発されたインタラクティブなToDoリスト管理CLIツールです。
-bubbletea フレームワークを使用して、リッチで直感的なターミナルUIを提供します。
+**koto** is an interactive ToDo list management CLI tool developed in Go.
+It provides a rich and intuitive terminal UI using the bubbletea framework.
 
-## 2. 目的と目標
+## 2. Purpose and Goals
 
-### 目的
-- ターミナル環境でシームレスに使用できるToDoリスト管理ツールの提供
-- 直感的で使いやすいインターフェースによる生産性の向上
-- 軽量かつ高速な動作
+### Purpose
+- Provide a ToDo list management tool that can be used seamlessly in a terminal environment
+- Improve productivity through an intuitive and easy-to-use interface
+- Lightweight and fast operation
 
-### 目標
-- Claude Codeのような専用画面での操作性を実現
-- スラッシュコマンドによる直感的な操作
-- ローカルストレージへのデータ永続化
-- クロスプラットフォーム対応（Linux, macOS, Windows）
+### Goals
+- Achieve the same level of operability as dedicated screens like Claude Code
+- Intuitive operation through slash commands
+- Data persistence to local storage
+- Cross-platform support (Linux, macOS, Windows)
 
-## 3. 主要機能
+## 3. Main Features
 
-### 3.1 コマンド一覧
+### 3.1 Command List
 
-| コマンド | 機能 | 説明 |
-|---------|------|------|
-| `koto` | アプリ起動 | 専用画面に入り、インタラクティブモードを開始 |
-| `/add` | ToDo追加 | 新しいToDoアイテムを追加 |
-| `/edit` | ToDo編集 | 既存のToDoアイテムを編集 |
-| `/delete` | ToDo削除 | ToDoアイテムを削除 |
-| `/done` | ToDo完了 | ToDoアイテムを完了状態にする |
-| `/list` | 一覧表示 | 全ToDoアイテムを一覧表示 |
-| `/export` | エクスポート | ToDoデータをJSONファイルへエクスポート |
-| `/import` | インポート | JSONファイルからToDoデータをインポート |
-| `/pomo` | ポモドーロタイマー | 25分間のタイマーを開始（オプションでタスクIDを指定） |
-| `/exit` | 終了 | アプリケーションを終了 |
+| Command | Function | Description |
+|---------|----------|-------------|
+| `koto` | Launch app | Enter dedicated screen and start interactive mode |
+| `/add` | Add ToDo | Add a new ToDo item |
+| `/edit` | Edit ToDo | Edit an existing ToDo item |
+| `/delete` | Delete ToDo | Delete a ToDo item |
+| `/done` | Complete ToDo | Mark a ToDo item as completed |
+| `/list` | Display list | Display all ToDo items |
+| `/export` | Export | Export ToDo data to JSON file |
+| `/import` | Import | Import ToDo data from JSON file |
+| `/pomo` | Pomodoro Timer | Start a 25-minute timer (optionally specify task ID) |
+| `/exit` | Exit | Exit the application |
 
-### 3.2 機能詳細
+### 3.2 Feature Details
 
-#### ToDo管理機能
-- ToDoアイテムの作成、編集、削除、完了
-- ToDoアイテムの状態管理（未完了/完了）
-- ToDoアイテムの優先度設定（オプション）
-- ToDoアイテムの期限設定（オプション）
+#### ToDo Management Features
+- Create, edit, delete, and complete ToDo items
+- Manage ToDo item status (incomplete/complete)
+- Set ToDo item priority (optional)
+- Set ToDo item deadline (optional)
 
-#### UI/UX機能
-- リアルタイムなコマンド入力とフィードバック
-- キーボードナビゲーション（矢印キー、Enter、Escなど）
-- カラフルで視認性の高い表示
-- レスポンシブなレイアウト
+#### UI/UX Features
+- Real-time command input and feedback
+- Keyboard navigation (arrow keys, Enter, Esc, etc.)
+- Colorful and highly visible display
+- Responsive layout
 
-#### データ管理機能
-- JSONファイルへのエクスポート（データ可搬性の確保）
-- JSONファイルからのインポート（他環境からの移行、バックアップからの復元）
-- 自動データベース初期化（初回起動時）
+#### Data Management Features
+- Export to JSON file (ensures data portability)
+- Import from JSON file (migration from other environments, restore from backup)
+- Automatic database initialization (on first launch)
 
-#### ポモドーロタイマー機能
-- 25分間のカウントダウンタイマー
-- タイマー終了時のアラーム通知
-- タスク別の作業時間記録（累積時間の自動計算）
-- 専用タイマー画面の表示
-- タイマーのキャンセル機能
+#### Pomodoro Timer Feature
+- 25-minute countdown timer
+- Alarm notification when timer ends
+- Task-specific work time recording (automatic calculation of cumulative time)
+- Display dedicated timer screen
+- Timer cancellation feature
 
-## 4. 技術スタック
+## 4. Technology Stack
 
-### プログラミング言語
+### Programming Language
 - **Go 1.21+**
 
-### 主要ライブラリ
-- **bubbletea**: TUIフレームワーク
-- **bubbles**: bubbletea用のUIコンポーネント
-- **lipgloss**: スタイリングライブラリ
-- **modernc.org/sqlite**: データ永続化（Pure Go実装、CGO不要）
+### Main Libraries
+- **bubbletea**: TUI framework
+- **bubbles**: UI components for bubbletea
+- **lipgloss**: Styling library
+- **modernc.org/sqlite**: Data persistence (Pure Go implementation, no CGO required)
 
-### 開発ツール
-- Go modules: 依存関係管理
-- golangci-lint: コード品質チェック
-- go test: テストフレームワーク
+### Development Tools
+- Go modules: Dependency management
+- golangci-lint: Code quality checks
+- go test: Testing framework
 
-## 5. システムアーキテクチャ概要
+## 5. System Architecture Overview
 
 ```
 ┌─────────────────────────────────────────┐
@@ -115,132 +115,132 @@ bubbletea フレームワークを使用して、リッチで直感的なター�
 └─────────────────────────────────────────┘
 ```
 
-## 6. データモデル概要
+## 6. Data Model Overview
 
-### ToDoアイテム
-- **ID**: 一意識別子（自動生成）
-- **Title**: タイトル（必須）
-- **Description**: 説明（オプション）
-- **Status**: ステータス（未完了/完了）
-- **Priority**: 優先度（Low/Medium/High）（オプション）
-- **DueDate**: 期限日時（オプション）
-- **WorkDuration**: 累積作業時間（分）（ポモドーロタイマーで自動記録）
-- **CreatedAt**: 作成日時（自動生成）
-- **UpdatedAt**: 更新日時（自動更新）
+### ToDo Item
+- **ID**: Unique identifier (auto-generated)
+- **Title**: Title (required)
+- **Description**: Description (optional)
+- **Status**: Status (incomplete/complete)
+- **Priority**: Priority (Low/Medium/High) (optional)
+- **DueDate**: Deadline date/time (optional)
+- **WorkDuration**: Cumulative work time (minutes) (automatically recorded by Pomodoro timer)
+- **CreatedAt**: Creation date/time (auto-generated)
+- **UpdatedAt**: Update date/time (auto-updated)
 
-## 7. UIフロー概要
+## 7. UI Flow Overview
 
 ```
-[アプリ起動]
+[App Launch]
     ↓
-[メイン画面]
-    ├─ ToDo一覧表示
-    │   └─ ↑/↓でタスクをフォーカス
-    │       └─ 空入力でEnter → [タスク詳細画面] → [メイン画面]
-    └─ コマンド入力エリア
+[Main Screen]
+    ├─ ToDo list display
+    │   └─ Focus on task with ↑/↓
+    │       └─ Empty input + Enter → [Task Detail Screen] → [Main Screen]
+    └─ Command input area
         ↓
-[コマンド入力]
-    ├─ /add → [ToDo追加画面] → [メイン画面]
-    ├─ /edit → [ToDo選択] → [編集画面] → [メイン画面]
-    ├─ /delete → [ToDo選択] → [削除確認] → [メイン画面]
-    ├─ /done → [ToDo選択] → [完了処理] → [メイン画面]
-    ├─ /list → [一覧表示更新] → [メイン画面]
-    ├─ /pomo → [ポモドーロタイマー画面] → [完了/キャンセル] → [メイン画面]
-    └─ /quit → [アプリ終了]
+[Command Input]
+    ├─ /add → [Add ToDo Screen] → [Main Screen]
+    ├─ /edit → [Select ToDo] → [Edit Screen] → [Main Screen]
+    ├─ /delete → [Select ToDo] → [Delete Confirmation] → [Main Screen]
+    ├─ /done → [Select ToDo] → [Complete Process] → [Main Screen]
+    ├─ /list → [Update List Display] → [Main Screen]
+    ├─ /pomo → [Pomodoro Timer Screen] → [Complete/Cancel] → [Main Screen]
+    └─ /quit → [Exit App]
 
-[タスク詳細画面]
-    ├─ タスクの全情報を表示（タイトル、説明、ステータス、優先度、作業時間、期限、作成日時、更新日時）
-    ├─ Esc → [メイン画面]
-    ├─ e → [編集画面] → [メイン画面]
-    └─ d → タスク完了 → [メイン画面]
+[Task Detail Screen]
+    ├─ Display all task information (title, description, status, priority, work time, deadline, creation date, update date)
+    ├─ Esc → [Main Screen]
+    ├─ e → [Edit Screen] → [Main Screen]
+    └─ d → Complete task → [Main Screen]
 ```
 
-## 8. 非機能要件
+## 8. Non-Functional Requirements
 
-### パフォーマンス
-- アプリ起動時間: 1秒以内
-- コマンド実行時間: 100ms以内
-- 10,000件のToDoアイテムでもスムーズに動作
+### Performance
+- App startup time: Within 1 second
+- Command execution time: Within 100ms
+- Smooth operation even with 10,000 ToDo items
 
-### セキュリティ
-- データベースファイルはユーザーのホームディレクトリに保存
-- ファイルパーミッション: 600（所有者のみ読み書き可能）
+### Security
+- Database file is stored in the user's home directory
+- File permissions: 600 (read/write only by owner)
 
-### 保守性
-- モジュール化された設計
-- 明確な責任分離
-- 包括的なテストカバレッジ（80%以上）
-- 詳細なドキュメント
+### Maintainability
+- Modular design
+- Clear separation of concerns
+- Comprehensive test coverage (80% or higher)
+- Detailed documentation
 
-### ユーザビリティ
-- 直感的なコマンド体系
-- ヘルプメッセージの充実
-- エラーメッセージの明確化
-- キーボードショートカットの提供
+### Usability
+- Intuitive command system
+- Rich help messages
+- Clear error messages
+- Keyboard shortcuts provided
 
-## 9. 配布方法
+## 9. Distribution Method
 
-### 9.1 単一バイナリ配布
-modernc.org/sqlite（Pure Go実装）を採用することで、以下の利点があります：
-- **依存関係なし**: SQLiteライブラリがバイナリに含まれる
-- **単一ファイル**: ユーザーは実行ファイル1つをダウンロードするだけ
-- **クロスコンパイル対応**: Windows, macOS, Linuxの全プラットフォーム向けに容易にビルド可能
+### 9.1 Single Binary Distribution
+By adopting modernc.org/sqlite (Pure Go implementation), we have the following advantages:
+- **No dependencies**: SQLite library is included in the binary
+- **Single file**: Users only need to download one executable file
+- **Cross-compilation support**: Easy to build for all platforms: Windows, macOS, Linux
 
-### 9.2 配布チャネル
-- **GitHub Releases**: 各プラットフォーム向けのバイナリを提供
+### 9.2 Distribution Channels
+- **GitHub Releases**: Provide binaries for each platform
   - `koto-linux-amd64`
   - `koto-darwin-amd64` / `koto-darwin-arm64`
   - `koto-windows-amd64.exe`
 - **Go install**: `go install github.com/yourusername/koto@latest`
-- **Homebrew**: 将来的に対応予定
+- **Homebrew**: Planned for future support
 
-### 9.3 ビルド方法
+### 9.3 Build Method
 ```bash
-# Pure Goなので、CGO不要でクロスコンパイルが簡単
+# Pure Go, so cross-compilation is easy without CGO
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o koto-linux-amd64
 CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o koto-darwin-arm64
 CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o koto-windows-amd64.exe
 ```
 
-### 9.4 ユーザー体験
+### 9.4 User Experience
 ```bash
-# ダウンロードして即実行可能（追加のインストール不要）
+# Download and run immediately (no additional installation required)
 wget https://github.com/user/koto/releases/download/v1.0.0/koto-linux-amd64
 chmod +x koto-linux-amd64
 ./koto-linux-amd64
 ```
 
-## 10. SQLite採用の利点
+## 10. Advantages of Adopting SQLite
 
-### 10.1 データ永続化
-- **信頼性**: トランザクション対応によるデータ整合性
-- **パフォーマンス**: インデックスによる高速検索
-- **スケーラビリティ**: 大量データ（数万件）でも性能劣化なし
+### 10.1 Data Persistence
+- **Reliability**: Data consistency through transaction support
+- **Performance**: Fast search through indexing
+- **Scalability**: No performance degradation even with large amounts of data (tens of thousands of records)
 
-### 10.2 データ可搬性の確保
-SQLiteはバイナリ形式ですが、以下の方法でデータの可搬性を確保：
-- `/export`コマンドによるJSON形式へのエクスポート
-- `/import`コマンドによるJSON形式からのインポート
-- バックアップ・移行が容易
+### 10.2 Ensuring Data Portability
+SQLite is in binary format, but data portability is ensured through the following methods:
+- Export to JSON format via `/export` command
+- Import from JSON format via `/import` command
+- Easy backup and migration
 
-### 10.3 将来の拡張容易性
-SQLiteの強力なクエリ機能により、以下の機能を容易に実装可能：
-- 複雑な検索・フィルタリング（タイトル、説明、タグの全文検索）
-- 統計・分析（完了率、期限遵守率、優先度別集計）
-- 高度なソート（複数条件、カスタムソート順）
+### 10.3 Easy Future Extensibility
+SQLite's powerful query capabilities make it easy to implement the following features:
+- Complex search and filtering (full-text search of title, description, tags)
+- Statistics and analysis (completion rate, deadline compliance rate, priority-based aggregation)
+- Advanced sorting (multiple conditions, custom sort order)
 
-## 11. 今後の拡張可能性
+## 11. Future Extensibility
 
-- タグ機能
-- 高度なフィルタリング・検索機能（全文検索）
-- カテゴリ分類
-- 定期タスク（リカーリング）
-- CSVエクスポート
-- クラウド同期機能
-- チーム共有機能
-- ポモドーロタイマーの拡張
-  - カスタマイズ可能なタイマー時間
-  - 休憩時間のタイマー（5分/15分）
-  - ポモドーロ回数の記録
-  - 作業時間の統計・グラフ表示
-  - 作業時間の目標設定
+- Tag feature
+- Advanced filtering and search features (full-text search)
+- Category classification
+- Recurring tasks
+- CSV export
+- Cloud sync feature
+- Team sharing feature
+- Pomodoro timer extensions
+  - Customizable timer duration
+  - Break time timers (5 min/15 min)
+  - Record number of Pomodoros
+  - Work time statistics and graph display
+  - Work time goal setting

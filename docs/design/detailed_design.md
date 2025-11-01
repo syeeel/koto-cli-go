@@ -1,37 +1,37 @@
-# koto - ToDo管理CLIツール 詳細設計書
+# koto - ToDo Management CLI Tool Detailed Design Document
 
-## 1. ディレクトリ構成
+## 1. Directory Structure
 
 ```
 koto/
 ├── cmd/
 │   └── koto/
-│       └── main.go              # エントリーポイント
+│       └── main.go              # Entry point
 ├── internal/
 │   ├── model/
-│   │   └── todo.go              # Todoデータモデル
+│   │   └── todo.go              # Todo data model
 │   ├── repository/
-│   │   ├── repository.go        # Repositoryインターフェース
-│   │   └── sqlite.go            # SQLite実装
+│   │   ├── repository.go        # Repository interface
+│   │   └── sqlite.go            # SQLite implementation
 │   ├── service/
-│   │   └── todo_service.go      # ビジネスロジック
+│   │   └── todo_service.go      # Business logic
 │   ├── tui/
 │   │   ├── model.go             # Bubbletea Model
-│   │   ├── commands.go          # コマンドパーサー
-│   │   ├── views.go             # ビューレンダリング
-│   │   ├── styles.go            # Lipglossスタイル
-│   │   └── update.go            # Update関数
+│   │   ├── commands.go          # Command parser
+│   │   ├── views.go             # View rendering
+│   │   ├── styles.go            # Lipgloss styles
+│   │   └── update.go            # Update function
 │   └── config/
-│       └── config.go            # 設定管理
+│       └── config.go            # Configuration management
 ├── pkg/
 │   └── utils/
-│       ├── time.go              # 時刻関連ユーティリティ
-│       └── validation.go        # バリデーション
+│       ├── time.go              # Time-related utilities
+│       └── validation.go        # Validation
 ├── migrations/
-│   └── 001_init.sql             # DBマイグレーション
+│   └── 001_init.sql             # DB migration
 ├── docs/
-│   ├── basic_design.md          # 基本設計書
-│   └── detailed_design.md       # 詳細設計書（本書）
+│   ├── basic_design.md          # Basic design document
+│   └── detailed_design.md       # Detailed design document (this document)
 ├── go.mod
 ├── go.sum
 ├── README.md
@@ -39,45 +39,45 @@ koto/
 └── Makefile
 ```
 
-## 2. パッケージ構成
+## 2. Package Structure
 
 ### 2.1 cmd/koto
-- アプリケーションのエントリーポイント
-- 設定の初期化
-- TUIアプリケーションの起動
+- Application entry point
+- Configuration initialization
+- Launch TUI application
 
 ### 2.2 internal/model
-- データモデルの定義
-- ドメインロジックを持たないPlain Old Go Object (POGO)
+- Data model definition
+- Plain Old Go Object (POGO) with no domain logic
 
 ### 2.3 internal/repository
-- データ永続化の抽象化レイヤー
-- SQLite実装
-- 将来的な他のストレージへの対応を容易にする
+- Data persistence abstraction layer
+- SQLite implementation
+- Makes it easy to support other storage in the future
 
 ### 2.4 internal/service
-- ビジネスロジック層
-- Repositoryを使用してデータ操作
-- バリデーション実行
+- Business logic layer
+- Data manipulation using Repository
+- Validation execution
 
 ### 2.5 internal/tui
-- Bubbletea によるTUI実装
-- Model-View-Update パターン
-- コマンドパーサー
-- スタイリング
+- TUI implementation using Bubbletea
+- Model-View-Update pattern
+- Command parser
+- Styling
 
 ### 2.6 internal/config
-- アプリケーション設定
-- データベースパスの管理
-- 設定ファイルの読み込み（オプション）
+- Application configuration
+- Database path management
+- Configuration file reading (optional)
 
 ### 2.7 pkg/utils
-- 汎用ユーティリティ関数
-- プロジェクト外からも利用可能な関数
+- General utility functions
+- Functions that can be used from outside the project
 
-## 3. データモデル詳細
+## 3. Data Model Details
 
-### 3.1 Todo構造体
+### 3.1 Todo Structure
 
 ```go
 package model
@@ -106,7 +106,7 @@ type Todo struct {
     Status       TodoStatus `db:"status"`
     Priority     Priority   `db:"priority"`
     DueDate      *time.Time `db:"due_date"`
-    WorkDuration int        `db:"work_duration"` // 累積作業時間（分）
+    WorkDuration int        `db:"work_duration"` // Cumulative work time (minutes)
     CreatedAt    time.Time  `db:"created_at"`
     UpdatedAt    time.Time  `db:"updated_at"`
 }
@@ -127,7 +127,7 @@ func (t Todo) IsOverdue() bool {
 }
 ```
 
-### 3.2 データベーススキーマ
+### 3.2 Database Schema
 
 ```sql
 CREATE TABLE IF NOT EXISTS todos (
@@ -147,9 +147,9 @@ CREATE INDEX idx_todos_due_date ON todos(due_date);
 CREATE INDEX idx_todos_created_at ON todos(created_at);
 ```
 
-## 4. Repository層詳細
+## 4. Repository Layer Details
 
-### 4.1 Repositoryインターフェース
+### 4.1 Repository Interface
 
 ```go
 package repository
@@ -189,9 +189,9 @@ type TodoRepository interface {
 }
 ```
 
-### 4.2 SQLite実装
+### 4.2 SQLite Implementation
 
-modernc.org/sqlite を使用することで、CGO不要の Pure Go 実装を実現します。
+Using modernc.org/sqlite enables a Pure Go implementation without CGO.
 
 ```go
 package repository
@@ -210,13 +210,13 @@ type SQLiteRepository struct {
 }
 
 func NewSQLiteRepository(dbPath string) (*SQLiteRepository, error) {
-    // modernc.org/sqliteを使用（Pure Go、CGO不要）
+    // Using modernc.org/sqlite (Pure Go, no CGO required)
     db, err := sql.Open("sqlite", dbPath)
     if err != nil {
         return nil, err
     }
 
-    // ファイルパーミッションを設定（セキュリティ）
+    // Set file permissions (security)
     if err := os.Chmod(dbPath, 0600); err != nil {
         return nil, err
     }
@@ -229,15 +229,15 @@ func NewSQLiteRepository(dbPath string) (*SQLiteRepository, error) {
     return &SQLiteRepository{db: db}, nil
 }
 
-// 各メソッドの実装...
+// Implementation of each method...
 ```
 
-**注意点:**
-- `CGO_ENABLED=0` でビルド可能
-- クロスコンパイルが容易
-- 依存関係がシンプル（Pure Go）
+**Notes:**
+- Can be built with `CGO_ENABLED=0`
+- Easy cross-compilation
+- Simple dependencies (Pure Go)
 
-## 5. Service層詳細
+## 5. Service Layer Details
 
 ### 5.1 TodoService
 
@@ -364,7 +364,7 @@ func (s *TodoService) ImportFromJSON(ctx context.Context, filepath string) error
         return err
     }
 
-    // インポート前に既存データを削除するかユーザーに確認する実装も検討
+    // Consider implementing user confirmation before deleting existing data
     for _, todo := range todos {
         if err := s.repo.Create(ctx, todo); err != nil {
             return err
@@ -375,7 +375,7 @@ func (s *TodoService) ImportFromJSON(ctx context.Context, filepath string) error
 }
 
 func (s *TodoService) AddWorkDuration(ctx context.Context, id int64, minutes int) error {
-    // ToDoが存在するか確認
+    // Check if the ToDo exists
     todo, err := s.repo.GetByID(ctx, id)
     if err != nil {
         return err
@@ -384,12 +384,12 @@ func (s *TodoService) AddWorkDuration(ctx context.Context, id int64, minutes int
         return ErrTodoNotFound
     }
 
-    // 作業時間を追加
+    // Add work duration
     return s.repo.AddWorkDuration(ctx, id, minutes)
 }
 ```
 
-## 6. TUI層詳細設計
+## 6. TUI Layer Detailed Design
 
 ### 6.1 Bubbletea Model
 
@@ -412,7 +412,7 @@ const (
     ViewModeDelete
     ViewModeHelp
     ViewModePomodoro
-    ViewModeDetail  // タスク詳細表示画面
+    ViewModeDetail  // Task detail display screen
 )
 
 type Model struct {
@@ -426,15 +426,15 @@ type Model struct {
     width           int
     height          int
     selectedID      int64
-    pomodoroTodoID  *int64        // ポモドーロタイマーに紐づくToDo ID (nilの場合は紐づけなし)
-    pomodoroStarted time.Time     // ポモドーロ開始時刻
-    pomodoroDuration time.Duration // ポモドーロの長さ（デフォルト25分）
-    detailTodoID    int64         // 詳細表示中のToDo ID
+    pomodoroTodoID  *int64        // ToDo ID linked to Pomodoro timer (nil if not linked)
+    pomodoroStarted time.Time     // Pomodoro start time
+    pomodoroDuration time.Duration // Pomodoro duration (default 25 minutes)
+    detailTodoID    int64         // ToDo ID being displayed in detail
 }
 
 func NewModel(service *service.TodoService) Model {
     ti := textinput.New()
-    ti.Placeholder = "コマンドを入力してください (/help でヘルプ)"
+    ti.Placeholder = "Enter a command (/help for help)"
     ti.Focus()
     ti.CharLimit = 500
     ti.Width = 80
@@ -453,7 +453,7 @@ func (m Model) Init() tea.Cmd {
 }
 ```
 
-### 6.2 Update関数
+### 6.2 Update Function
 
 ```go
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -509,7 +509,7 @@ func (m *Model) handleEnter() (tea.Model, tea.Cmd) {
 }
 ```
 
-### 6.3 View関数
+### 6.3 View Function
 
 ```go
 func (m Model) View() string {
@@ -539,9 +539,9 @@ func (m Model) renderListView() string {
     s += titleStyle.Render("📝 koto - ToDo Manager") + "\n\n"
 
     if len(m.todos) == 0 {
-        s += emptyStyle.Render("ToDoがありません。/add で新しいToDoを追加してください。") + "\n"
+        s += emptyStyle.Render("No ToDos. Add a new ToDo with /add.") + "\n"
     } else {
-        // ヘッダー行
+        // Header row
         s += headerStyle.Render("No.  Title                Description          Created At") + "\n"
         s += separatorStyle.Render(strings.Repeat("─", 80)) + "\n"
 
@@ -554,16 +554,16 @@ func (m Model) renderListView() string {
             // No. (ID)
             no := fmt.Sprintf("%-4d", todo.ID)
 
-            // Title (最大20文字、切り詰め)
+            // Title (max 20 chars, truncate)
             title := truncateString(todo.Title, 20)
 
-            // Description (最大20文字、切り詰め)
+            // Description (max 20 chars, truncate)
             desc := truncateString(todo.Description, 20)
 
-            // Created At (日付のみ)
+            // Created At (date only)
             created := todo.CreatedAt.Format("2006-01-02")
 
-            // 行の組み立て
+            // Build the line
             line := fmt.Sprintf("%s %s %s %s %s", cursor, no, title, desc, created)
 
             if m.cursor == i {
@@ -572,7 +572,7 @@ func (m Model) renderListView() string {
                 s += line + "\n"
             }
 
-            // 区切り線
+            // Separator line
             s += separatorStyle.Render(strings.Repeat("─", 80)) + "\n"
         }
     }
@@ -584,10 +584,10 @@ func (m Model) renderListView() string {
     }
 
     if m.err != nil {
-        s += "\n" + errorStyle.Render("エラー: "+m.err.Error()) + "\n"
+        s += "\n" + errorStyle.Render("Error: "+m.err.Error()) + "\n"
     }
 
-    s += "\n" + helpStyle.Render("使い方: /help | 終了: Ctrl+C")
+    s += "\n" + helpStyle.Render("Usage: /help | Exit: Ctrl+C")
 
     return s
 }
@@ -595,7 +595,7 @@ func (m Model) renderListView() string {
 func (m Model) renderPomodoroView() string {
     var s string
 
-    // タイマーの残り時間を計算
+    // Calculate remaining time
     elapsed := time.Since(m.pomodoroStarted)
     remaining := m.pomodoroDuration - elapsed
 
@@ -606,30 +606,30 @@ func (m Model) renderPomodoroView() string {
     minutes := int(remaining.Minutes())
     seconds := int(remaining.Seconds()) % 60
 
-    s += pomodoroTitleStyle.Render("🍅 ポモドーロタイマー") + "\n\n"
+    s += pomodoroTitleStyle.Render("🍅 Pomodoro Timer") + "\n\n"
 
-    // タイマー表示（大きく表示）
+    // Timer display (large)
     timerText := fmt.Sprintf("%02d:%02d", minutes, seconds)
     s += pomodoroTimerStyle.Render(timerText) + "\n\n"
 
-    // 紐づくToDoがある場合、タイトルを表示
+    // If linked to a ToDo, display the title
     if m.pomodoroTodoID != nil {
         for _, todo := range m.todos {
             if todo.ID == *m.pomodoroTodoID {
-                s += pomodoroTaskStyle.Render(fmt.Sprintf("作業中: %s", todo.Title)) + "\n\n"
+                s += pomodoroTaskStyle.Render(fmt.Sprintf("Working on: %s", todo.Title)) + "\n\n"
                 break
             }
         }
     } else {
-        s += pomodoroTaskStyle.Render("フリータイマーモード") + "\n\n"
+        s += pomodoroTaskStyle.Render("Free timer mode") + "\n\n"
     }
 
-    // タイマー終了時
+    // When timer ends
     if remaining == 0 {
-        s += pomodoroCompleteStyle.Render("🎉 ポモドーロ完了！") + "\n"
-        s += "Enterキーを押してメイン画面に戻る\n"
+        s += pomodoroCompleteStyle.Render("🎉 Pomodoro completed!") + "\n"
+        s += "Press Enter to return to main screen\n"
     } else {
-        s += helpStyle.Render("Escキーでキャンセル")
+        s += helpStyle.Render("Press Esc to cancel")
     }
 
     return s
@@ -638,7 +638,7 @@ func (m Model) renderPomodoroView() string {
 func (m Model) renderDetailView() string {
     var s string
 
-    // 詳細表示するToDoを取得
+    // Get the ToDo to display in detail
     var targetTodo *model.Todo
     for _, todo := range m.todos {
         if todo.ID == m.detailTodoID {
@@ -648,86 +648,86 @@ func (m Model) renderDetailView() string {
     }
 
     if targetTodo == nil {
-        s += errorStyle.Render("指定されたToDoが見つかりません") + "\n"
-        s += helpStyle.Render("Escキーでメイン画面に戻る")
+        s += errorStyle.Render("Specified ToDo not found") + "\n"
+        s += helpStyle.Render("Press Esc to return to main screen")
         return s
     }
 
-    // タイトル
+    // Title
     s += titleStyle.Render(fmt.Sprintf("📋 ToDo Details #%d", targetTodo.ID)) + "\n\n"
 
-    // タイトル表示
-    s += headerStyle.Render(" タイトル ") + "\n"
+    // Title display
+    s += headerStyle.Render(" Title ") + "\n"
     s += todoDetailFieldStyle.Render(targetTodo.Title) + "\n\n"
 
-    // 説明表示
-    s += headerStyle.Render(" 説明 ") + "\n"
+    // Description display
+    s += headerStyle.Render(" Description ") + "\n"
     if targetTodo.Description != "" {
         s += todoDetailFieldStyle.Render(targetTodo.Description) + "\n\n"
     } else {
-        s += emptyStyle.Render("（説明なし）") + "\n\n"
+        s += emptyStyle.Render("(No description)") + "\n\n"
     }
 
-    // ステータス表示
-    s += headerStyle.Render(" ステータス ") + "\n"
-    status := "未完了"
+    // Status display
+    s += headerStyle.Render(" Status ") + "\n"
+    status := "Incomplete"
     if targetTodo.IsCompleted() {
-        status = "完了"
+        status = "Completed"
     }
     s += todoDetailFieldStyle.Render(status) + "\n\n"
 
-    // 優先度表示
-    s += headerStyle.Render(" 優先度 ") + "\n"
+    // Priority display
+    s += headerStyle.Render(" Priority ") + "\n"
     priorityStr := ""
     switch targetTodo.Priority {
     case model.PriorityHigh:
-        priorityStr = "高"
+        priorityStr = "High"
     case model.PriorityMedium:
-        priorityStr = "中"
+        priorityStr = "Medium"
     case model.PriorityLow:
-        priorityStr = "低"
+        priorityStr = "Low"
     }
     s += todoDetailFieldStyle.Render(priorityStr) + "\n\n"
 
-    // 累積作業時間表示
-    s += headerStyle.Render(" 累積作業時間 ") + "\n"
+    // Cumulative work time display
+    s += headerStyle.Render(" Cumulative Work Time ") + "\n"
     if targetTodo.WorkDuration > 0 {
         hours := targetTodo.WorkDuration / 60
         minutes := targetTodo.WorkDuration % 60
         workDurationStr := fmt.Sprintf("%dh %dm", hours, minutes)
         s += todoDetailFieldStyle.Render(workDurationStr) + "\n\n"
     } else {
-        s += emptyStyle.Render("（記録なし）") + "\n\n"
+        s += emptyStyle.Render("(No record)") + "\n\n"
     }
 
-    // 期限表示
-    s += headerStyle.Render(" 期限 ") + "\n"
+    // Due date display
+    s += headerStyle.Render(" Due Date ") + "\n"
     if targetTodo.DueDate != nil {
         dueDateStr := targetTodo.DueDate.Format("2006-01-02 15:04")
         s += todoDetailFieldStyle.Render(dueDateStr)
         if targetTodo.IsOverdue() {
-            s += " " + errorStyle.Render("（期限切れ）")
+            s += " " + errorStyle.Render("(Overdue)")
         }
         s += "\n\n"
     } else {
-        s += emptyStyle.Render("（期限なし）") + "\n\n"
+        s += emptyStyle.Render("(No due date)") + "\n\n"
     }
 
-    // 作成日時・更新日時
-    s += headerStyle.Render(" 作成日時 ") + "\n"
+    // Created/Updated times
+    s += headerStyle.Render(" Created At ") + "\n"
     s += todoDetailFieldStyle.Render(targetTodo.CreatedAt.Format("2006-01-02 15:04:05")) + "\n\n"
 
-    s += headerStyle.Render(" 更新日時 ") + "\n"
+    s += headerStyle.Render(" Updated At ") + "\n"
     s += todoDetailFieldStyle.Render(targetTodo.UpdatedAt.Format("2006-01-02 15:04:05")) + "\n\n"
 
-    // ヘルプテキスト
-    s += "\n" + helpStyle.Render("Escキーでメイン画面に戻る | eキーで編集 | dキーで完了")
+    // Help text
+    s += "\n" + helpStyle.Render("Press Esc to return to main screen | e to edit | d to complete")
 
     return s
 }
 ```
 
-### 6.4 コマンドパーサー
+### 6.4 Command Parser
 
 ```go
 package tui
@@ -756,7 +756,7 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
 
         if !strings.HasPrefix(input, "/") {
             return commandExecutedMsg{
-                err: errors.New("コマンドは / で始める必要があります"),
+                err: errors.New("command must start with /"),
             }
         }
 
@@ -789,7 +789,7 @@ func parseAndExecuteCommand(svc *service.TodoService, input string) tea.Cmd {
             return tea.Quit()
         default:
             return commandExecutedMsg{
-                err: errors.New("不明なコマンド: " + command),
+                err: errors.New("unknown command: " + command),
             }
         }
     }
@@ -802,10 +802,10 @@ func loadTodos(svc *service.TodoService) tea.Cmd {
     }
 }
 
-// 各コマンドハンドラーの実装...
+// Implementation of each command handler...
 ```
 
-### 6.5 スタイル定義
+### 6.5 Style Definitions
 
 ```go
 package tui
@@ -846,7 +846,7 @@ var (
     pomodoroTimerStyle = lipgloss.NewStyle().
         Bold(true).
         Foreground(lipgloss.Color("226")).
-        FontSize(48).  // 大きなフォント（TUIでは擬似的に表現）
+        FontSize(48).  // Large font (pseudo-representation in TUI)
         Align(lipgloss.Center)
 
     pomodoroTaskStyle = lipgloss.NewStyle().
@@ -859,143 +859,143 @@ var (
 )
 ```
 
-## 7. コマンド仕様詳細
+## 7. Command Specification Details
 
-### 7.1 /add - ToDo追加
+### 7.1 /add - Add ToDo
 
-**構文:**
+**Syntax:**
 ```
-/add <タイトル> [--desc=<説明>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]
-```
-
-**例:**
-```
-/add レポートを書く
-/add レポートを書く --desc=月次報告書 --priority=high --due=2024-12-31
+/add <title> [--desc=<description>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]
 ```
 
-**処理フロー:**
-1. コマンドパース
-2. バリデーション（タイトル必須）
-3. Service層のAddTodo呼び出し
-4. 成功メッセージ表示
-5. 一覧を再読み込み
-
-### 7.2 /edit - ToDo編集
-
-**構文:**
+**Examples:**
 ```
-/edit <ID> [--title=<新しいタイトル>] [--desc=<新しい説明>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]
+/add Write report
+/add Write report --desc=Monthly report --priority=high --due=2024-12-31
 ```
 
-**例:**
+**Processing Flow:**
+1. Parse command
+2. Validation (title required)
+3. Call Service layer's AddTodo
+4. Display success message
+5. Reload list
+
+### 7.2 /edit - Edit ToDo
+
+**Syntax:**
 ```
-/edit 1 --title=新しいタイトル
+/edit <ID> [--title=<new title>] [--desc=<new description>] [--priority=<low|medium|high>] [--due=<YYYY-MM-DD>]
+```
+
+**Examples:**
+```
+/edit 1 --title=New title
 /edit 2 --priority=high --due=2024-12-25
 ```
 
-**処理フロー:**
-1. ID指定でTodoを検索
-2. 存在チェック
-3. 指定されたフィールドを更新
-4. Service層のEditTodo呼び出し
-5. 成功メッセージ表示
-6. 一覧を再読み込み
+**Processing Flow:**
+1. Search for Todo by ID
+2. Check existence
+3. Update specified fields
+4. Call Service layer's EditTodo
+5. Display success message
+6. Reload list
 
-### 7.3 /delete - ToDo削除
+### 7.3 /delete - Delete ToDo
 
-**構文:**
+**Syntax:**
 ```
 /delete <ID>
 ```
 
-**例:**
+**Examples:**
 ```
 /delete 1
 ```
 
-**処理フロー:**
-1. ID指定でTodoを検索
-2. 存在チェック
-3. 削除確認プロンプト表示（オプション）
-4. Service層のDeleteTodo呼び出し
-5. 成功メッセージ表示
-6. 一覧を再読み込み
+**Processing Flow:**
+1. Search for Todo by ID
+2. Check existence
+3. Display deletion confirmation prompt (optional)
+4. Call Service layer's DeleteTodo
+5. Display success message
+6. Reload list
 
-### 7.4 /done - ToDo完了
+### 7.4 /done - Complete ToDo
 
-**構文:**
+**Syntax:**
 ```
 /done <ID>
 ```
 
-**例:**
+**Examples:**
 ```
 /done 1
 ```
 
-**処理フロー:**
-1. ID指定でTodoを検索
-2. 存在チェック
-3. Service層のCompleteTodo呼び出し
-4. 成功メッセージ表示
-5. 一覧を再読み込み
+**Processing Flow:**
+1. Search for Todo by ID
+2. Check existence
+3. Call Service layer's CompleteTodo
+4. Display success message
+5. Reload list
 
-### 7.5 /list - 一覧表示
+### 7.5 /list - Display List
 
-**構文:**
+**Syntax:**
 ```
 /list [--status=<pending|completed|all>]
 ```
 
-**例:**
+**Examples:**
 ```
 /list
 /list --status=pending
 /list --status=completed
 ```
 
-**処理フロー:**
-1. ステータスフィルターの解析
-2. Service層の対応するメソッド呼び出し
-3. 一覧を表示
+**Processing Flow:**
+1. Parse status filter
+2. Call corresponding Service layer method
+3. Display list
 
-### 7.6 /help - ヘルプ表示
+### 7.6 /help - Display Help
 
-**構文:**
+**Syntax:**
 ```
 /help
 ```
 
-**処理フロー:**
-1. ヘルプテキストを表示
+**Processing Flow:**
+1. Display help text
 
-### 7.7 /export - JSONエクスポート
+### 7.7 /export - JSON Export
 
-**構文:**
+**Syntax:**
 ```
-/export [ファイルパス]
+/export [file path]
 ```
 
-**例:**
+**Examples:**
 ```
 /export
 /export ~/backups/todos-2024-12-01.json
 ```
 
-**処理フロー:**
-1. エクスポート先ファイルパスの解析（デフォルト: `~/.koto/export.json`）
-2. Service層のExportToJSON呼び出し
-3. 全ToDoデータをJSON形式でファイルに書き込み
-4. 成功メッセージ表示
+**Processing Flow:**
+1. Parse export destination file path (default: `~/.koto/export.json`)
+2. Call Service layer's ExportToJSON
+3. Write all ToDo data to file in JSON format
+4. Display success message
 
-**エクスポート形式:**
+**Export Format:**
 ```json
 [
   {
     "id": 1,
-    "title": "レポートを書く",
-    "description": "月次報告書",
+    "title": "Write report",
+    "description": "Monthly report",
     "status": 0,
     "priority": 2,
     "due_date": "2024-12-31T23:59:59Z",
@@ -1005,112 +1005,112 @@ var (
 ]
 ```
 
-### 7.8 /import - JSONインポート
+### 7.8 /import - JSON Import
 
-**構文:**
+**Syntax:**
 ```
-/import <ファイルパス>
+/import <file path>
 ```
 
-**例:**
+**Examples:**
 ```
 /import ~/backups/todos-2024-12-01.json
 ```
 
-**処理フロー:**
-1. インポート元ファイルパスの解析
-2. ファイルの存在確認
-3. JSON形式のバリデーション
-4. 確認プロンプト表示（既存データとの重複について）
-5. Service層のImportFromJSON呼び出し
-6. 成功メッセージ表示（インポート件数を含む）
-7. 一覧を再読み込み
+**Processing Flow:**
+1. Parse import source file path
+2. Check file existence
+3. Validate JSON format
+4. Display confirmation prompt (regarding duplicates with existing data)
+5. Call Service layer's ImportFromJSON
+6. Display success message (including number of imported items)
+7. Reload list
 
-**注意事項:**
-- IDが重複する場合の処理（上書き or スキップ）をユーザーに確認
-- 大量データのインポート時の進捗表示
+**Notes:**
+- Confirm with user how to handle duplicate IDs (overwrite or skip)
+- Display progress for large data imports
 
-### 7.9 /pomo - ポモドーロタイマー
+### 7.9 /pomo - Pomodoro Timer
 
-**構文:**
+**Syntax:**
 ```
 /pomo [ToDo ID]
 ```
 
-**例:**
+**Examples:**
 ```
-/pomo              # フリータイマーモード（25分）
-/pomo 1            # ID 1のToDoに紐づけて25分タイマー開始
+/pomo              # Free timer mode (25 minutes)
+/pomo 1            # Start 25-minute timer linked to ToDo ID 1
 ```
 
-**処理フロー:**
-1. 引数チェック（ToDo IDが指定されている場合、存在確認）
-2. ポモドーロモードに遷移
-3. タイマー開始（25分 = 1500秒）
-4. 1秒ごとに画面を更新（tea.Tick使用）
-5. タイマー終了時
-   - アラーム表示
-   - ToDo IDが指定されている場合、作業時間を記録（25分追加）
-   - Enterキー待ち
-6. Enterキーでメイン画面に戻る
+**Processing Flow:**
+1. Check arguments (if ToDo ID is specified, verify existence)
+2. Transition to Pomodoro mode
+3. Start timer (25 minutes = 1500 seconds)
+4. Update screen every second (using tea.Tick)
+5. When timer ends
+   - Display alarm
+   - If ToDo ID is specified, record work time (add 25 minutes)
+   - Wait for Enter key
+6. Return to main screen on Enter key
 
-**キャンセル:**
-- Escキーでタイマーをキャンセルし、メイン画面に戻る
-- キャンセル時は作業時間を記録しない
+**Cancellation:**
+- Press Esc to cancel timer and return to main screen
+- No work time recorded on cancellation
 
-**注意事項:**
-- タイマー実行中は専用画面が表示される
-- バックグラウンドでの実行はサポートしない
-- タイマー完了時のみ作業時間を記録
+**Notes:**
+- Dedicated screen is displayed during timer execution
+- Background execution not supported
+- Work time only recorded when timer completes
 
-### 7.10 /quit - アプリ終了
+### 7.10 /quit - Exit App
 
-**構文:**
+**Syntax:**
 ```
 /quit
 ```
 
-**処理フロー:**
-1. データベース接続をクローズ
-2. アプリケーション終了
+**Processing Flow:**
+1. Close database connection
+2. Exit application
 
-## 8. エラーハンドリング
+## 8. Error Handling
 
-### 8.1 エラー種別
+### 8.1 Error Types
 
-| エラー種別 | 説明 | 対応方法 |
-|-----------|------|---------|
-| バリデーションエラー | 入力値が不正 | エラーメッセージを表示し、再入力を促す |
-| データベースエラー | DB操作失敗 | エラーログを出力し、ユーザーに通知 |
-| 存在しないID | 指定IDのTodoが見つからない | エラーメッセージを表示 |
-| コマンド解析エラー | 不正なコマンド | ヘルプを表示し、正しい構文を案内 |
-| ファイルI/Oエラー | エクスポート/インポート失敗 | ファイルパスやパーミッションを確認するよう案内 |
-| JSON解析エラー | 不正なJSON形式 | 正しいJSON形式でエクスポートされたファイルを指定するよう案内 |
+| Error Type | Description | Response |
+|-----------|-------------|----------|
+| Validation Error | Invalid input value | Display error message and prompt re-entry |
+| Database Error | DB operation failed | Output error log and notify user |
+| Non-existent ID | Specified ID Todo not found | Display error message |
+| Command Parse Error | Invalid command | Display help and guide to correct syntax |
+| File I/O Error | Export/import failed | Guide to check file path or permissions |
+| JSON Parse Error | Invalid JSON format | Guide to specify correctly exported JSON file |
 
-### 8.2 エラーメッセージ例
+### 8.2 Error Message Examples
 
 ```go
 var (
     ErrMessages = map[error]string{
-        service.ErrTodoNotFound:    "指定されたToDoが見つかりません",
-        service.ErrInvalidTitle:    "タイトルは必須です",
-        service.ErrInvalidPriority: "優先度は low, medium, high のいずれかを指定してください",
-        service.ErrFileNotFound:    "ファイルが見つかりません",
-        service.ErrInvalidJSON:     "JSONの形式が不正です",
-        service.ErrExportFailed:    "エクスポートに失敗しました",
-        service.ErrImportFailed:    "インポートに失敗しました",
+        service.ErrTodoNotFound:    "Specified ToDo not found",
+        service.ErrInvalidTitle:    "Title is required",
+        service.ErrInvalidPriority: "Priority must be low, medium, or high",
+        service.ErrFileNotFound:    "File not found",
+        service.ErrInvalidJSON:     "Invalid JSON format",
+        service.ErrExportFailed:    "Export failed",
+        service.ErrImportFailed:    "Import failed",
     }
 )
 ```
 
-## 9. データ永続化
+## 9. Data Persistence
 
-### 9.1 データベースファイル配置
+### 9.1 Database File Location
 
-- **パス**: `~/.koto/koto.db`
-- **パーミッション**: 0600 (所有者のみ読み書き可能)
+- **Path**: `~/.koto/koto.db`
+- **Permissions**: 0600 (read/write only by owner)
 
-### 9.2 初期化処理
+### 9.2 Initialization Process
 
 ```go
 func initDatabase() (*sql.DB, error) {
@@ -1134,15 +1134,15 @@ func initDatabase() (*sql.DB, error) {
 }
 ```
 
-## 10. テスト戦略
+## 10. Testing Strategy
 
-### 10.1 ユニットテスト
+### 10.1 Unit Tests
 
-- **対象**: 各パッケージの関数・メソッド
-- **ツール**: Go標準のtestingパッケージ
-- **カバレッジ目標**: 80%以上
+- **Target**: Functions and methods of each package
+- **Tools**: Go standard testing package
+- **Coverage Goal**: 80% or higher
 
-**例:**
+**Example:**
 ```go
 func TestTodoService_AddTodo(t *testing.T) {
     // Setup
@@ -1159,28 +1159,28 @@ func TestTodoService_AddTodo(t *testing.T) {
 }
 ```
 
-### 10.2 統合テスト
+### 10.2 Integration Tests
 
-- **対象**: Repository層とデータベースの統合
-- **ツール**: Go testing + インメモリSQLite
+- **Target**: Integration of Repository layer and database
+- **Tools**: Go testing + In-memory SQLite
 
-### 10.3 E2Eテスト
+### 10.3 E2E Tests
 
-- **対象**: アプリケーション全体のフロー
-- **ツール**: Go testing + Bubbletea test utilities
+- **Target**: Application flow as a whole
+- **Tools**: Go testing + Bubbletea test utilities
 
-## 11. ビルドとリリース
+## 11. Build and Release
 
 ### 11.1 Makefile
 
 ```makefile
 .PHONY: build test clean install release-local
 
-# Pure Goビルド（CGO不要）
+# Pure Go build (no CGO required)
 build:
 	CGO_ENABLED=0 go build -o bin/koto ./cmd/koto
 
-# クロスコンパイル用ビルド
+# Cross-compilation build
 build-all:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/koto-linux-amd64 ./cmd/koto
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o bin/koto-darwin-amd64 ./cmd/koto
@@ -1203,7 +1203,7 @@ release:
 	goreleaser release --clean
 ```
 
-### 11.2 GoReleaserの設定
+### 11.2 GoReleaser Configuration
 
 ```yaml
 # .goreleaser.yml
@@ -1228,49 +1228,49 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 ```
 
-## 12. データ可搬性の実現
+## 12. Achieving Data Portability
 
-### 12.1 エクスポート機能
-SQLiteはバイナリ形式ですが、`/export`コマンドにより以下を実現：
-- 人間が読めるJSON形式への変換
-- 他の環境への移行が容易
-- バックアップの作成
-- 他のツールとの連携
+### 12.1 Export Feature
+While SQLite is in binary format, the `/export` command achieves the following:
+- Conversion to human-readable JSON format
+- Easy migration to other environments
+- Backup creation
+- Integration with other tools
 
-### 12.2 インポート機能
-`/import`コマンドにより以下を実現：
-- バックアップからの復元
-- 他の環境からのデータ移行
-- 外部ツールで作成したToDoデータの取り込み
+### 12.2 Import Feature
+The `/import` command achieves the following:
+- Restore from backup
+- Data migration from other environments
+- Import ToDo data created by external tools
 
-### 12.3 データ連携の例
+### 12.3 Data Integration Examples
 ```bash
-# 環境A: データをエクスポート
+# Environment A: Export data
 /export ~/todos-backup.json
 
-# 環境B: データをインポート
+# Environment B: Import data
 /import ~/todos-backup.json
 
-# スクリプトでの加工も可能
+# Processing with scripts is also possible
 cat ~/todos-backup.json | jq '.[] | select(.priority == 2)' > high-priority.json
 /import high-priority.json
 ```
 
-## 13. 将来の拡張
+## 13. Future Extensions
 
-### 13.1 フェーズ2（v2.0）
-- タグ機能（複数タグの付与）
-- 高度なフィルタリング・検索（全文検索、複数条件）
-- カテゴリ分類
+### 13.1 Phase 2 (v2.0)
+- Tag feature (assign multiple tags)
+- Advanced filtering and search (full-text search, multiple conditions)
+- Category classification
 
-### 13.2 フェーズ3（v3.0）
-- 定期タスク（リカーリング）
-- CSVエクスポート
-- 設定ファイル対応（YAML/TOML）
-- サブタスク機能
+### 13.2 Phase 3 (v3.0)
+- Recurring tasks
+- CSV export
+- Configuration file support (YAML/TOML)
+- Subtask feature
 
-### 13.3 フェーズ4（v4.0以降）
-- クラウド同期
-- チーム共有
+### 13.3 Phase 4 (v4.0 and beyond)
+- Cloud sync
+- Team sharing
 - Web UI
-- モバイルアプリ連携
+- Mobile app integration
